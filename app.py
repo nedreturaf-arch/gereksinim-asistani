@@ -66,8 +66,8 @@ if st.button("🚀 Analizi Başlat"):
             # 5. AKADEMİK PERFORMANS METRİKLERİ (TABLO 4.3 İLE UYUMLU)
             st.divider()
             st.subheader("📊 Sistem Performans Metrikleri ve Kalite Standartları")
-            st.caption("Bu performans değerleri; **ISO/IEC 25010** (Yazılım Kalite Modeli) ve **ISO/IEC/IEEE 29148** (Gereksinim Mühendisliği) 
-standartlarında tanımlanan "Doğrulanabilirlik" ve "Analiz Edilebilirlik" kriterleri baz alınarak hesaplanmıştır.")
+            st.caption ("Bu performans değerleri; **ISO/IEC 25010** (Yazılım Kalite Modeli) ve **ISO/IEC/IEEE 29148** (Gereksinim Mühendisliği) 
+standartlarında tanımlanan "Doğrulanabilirlik" ve "Analiz Edilebilirlik" kriterleri baz alınarak hesaplanmıştır")
 
             c1, c2, c3, c4 = st.columns(4)
             c1.metric("Doğruluk (Accuracy)", "%87")
@@ -77,5 +77,6 @@ standartlarında tanımlanan "Doğrulanabilirlik" ve "Analiz Edilebilirlik" krit
             
         except Exception as e:
             st.error(f"❌ Hata: {e}")
+
 
 
