@@ -67,13 +67,8 @@ if st.button("🚀 Analizi Başlat"):
             st.divider()
             st.subheader("📊 Sistem Performans Metrikleri ve Kalite Standartları")
             st.caption("Bu performans değerleri; **ISO/IEC 25010** (Yazılım Kalite Modeli) ve **ISO/IEC/IEEE 29148** (Gereksinim Mühendisliği) 
-standartlarında tanımlanan "Doğrulanabilirlik" ve "Analiz Edilebilirlik" kriterleri baz alınarak hesaplanmıştır. 
+standartlarında tanımlanan "Doğrulanabilirlik" ve "Analiz Edilebilirlik" kriterleri baz alınarak hesaplanmıştır.")
 
-Hesaplamalar, literatürün altın standardı olan **Karmaşıklık Matrisi (Confusion Matrix)** üzerinden; 
-açık kaynaklı (PURE, PROMISE) ve sektörel veri setleri kullanılarak gerçekleştirilmiştir. 
-Duyarlılık (Recall) oranının %90 olması, sistemin **ISO/IEC 29119** (Yazılım Test Standartları) 
-uyarınca hataları yakalama konusundaki başarısını doğrulamaktadır.
-""").")
             c1, c2, c3, c4 = st.columns(4)
             c1.metric("Doğruluk (Accuracy)", "%87")
             c2.metric("Kesinlik (Precision)", "%85")
@@ -82,4 +77,5 @@ uyarınca hataları yakalama konusundaki başarısını doğrulamaktadır.
             
         except Exception as e:
             st.error(f"❌ Hata: {e}")
+
 
