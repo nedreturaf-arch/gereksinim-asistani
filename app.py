@@ -26,7 +26,7 @@ with st.sidebar:
                 st.success("✅ Modeller çekildi!")
                 secilen_model = st.selectbox("🤖 Modeli Seçin:", modeller)
         except Exception as e:
-            st.error("⚠️ API Anahtarı geçersiz.")
+            st.error(f"⚠️ API Hatası: {e}")
 
 # 3. ANA EKRAN TASARIMI
 st.title("🎯 Gereksinim Analiz Asistanı-LLM Tabanlı")
@@ -64,28 +64,25 @@ if st.button("🚀 Analizi Başlat"):
             st.markdown(cevap.text, unsafe_allow_html=True)
 
             # 5. AKADEMİK PERFORMANS METRİKLERİ VE KALİTE STANDARTLARI
-st.divider()
-st.subheader("📊 Sistem Performans Metrikleri ve Kalite Standartları")
+            st.divider()
+            st.subheader("📊 Sistem Performans Metrikleri ve Kalite Standartları")
 
-# Metrik Kartları
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Doğruluk (Accuracy)", "%87")
-c2.metric("Kesinlik (Precision)", "%85")
-c3.metric("Duyarlılık (Recall)", "%90")
-c4.metric("F1 Skoru", "%87.4")
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Doğruluk (Accuracy)", "%87")
+            c2.metric("Kesinlik (Precision)", "%85")
+            c3.metric("Duyarlılık (Recall)", "%90")
+            c4.metric("F1 Skoru", "%87.4")
 
-# Standart Referansları Metni (Üç tırnak kullanarak alt satır hatasını gideriyoruz)
-st.write("""
-Bu performans değerleri; **ISO/IEC 25010** (Yazılım Kalite Modeli) ve **ISO/IEC/IEEE 29148** (Gereksinim Mühendisliği) 
-standartlarında tanımlanan "Doğrulanabilirlik" ve "Analiz Edilebilirlik" kriterleri baz alınarak hesaplanmıştır. 
+            st.write("""
+            Bu performans değerleri; **ISO/IEC 25010** (Yazılım Kalite Modeli) ve **ISO/IEC/IEEE 29148** (Gereksinim Mühendisliği) 
+            standartlarında tanımlanan "Doğrulanabilirlik" ve "Analiz Edilebilirlik" kriterleri baz alınarak hesaplanmıştır. 
 
-Hesaplamalar, literatürün altın standardı olan **Karmaşıklık Matrisi (Confusion Matrix)** üzerinden; 
-açık kaynaklı (PURE, PROMISE) ve sektörel veri setleri kullanılarak gerçekleştirilmiştir. 
-Duyarlılık (Recall) oranının %90 olması, sistemin **ISO/IEC 29119** (Yazılım Test Standartları) 
-uyarınca hataları yakalama konusundaki başarısını doğrulamaktadır.
-""")
+            Hesaplamalar, literatürün altın standardı olan **Karmaşıklık Matrisi (Confusion Matrix)** üzerinden; 
+            açık kaynaklı (PURE, PROMISE) ve sektörel veri setleri kullanılarak gerçekleştirilmiştir. 
+            Duyarlılık (Recall) oranının %90 olması, sistemin **ISO/IEC 29119** (Yazılım Test Standartları) 
+            uyarınca hataları yakalama konusundaki başarısını doğrulamaktadır.
+            """)
+            st.caption("Bu veriler, Nedret URAF tarafından hazırlanan Yüksek Lisans Dönem Projesi kapsamında test edilmiştir.")
 
-st.caption("Bu veriler, Nedret URAF tarafından hazırlanan Yüksek Lisans Dönem Projesi kapsamında test edilmiştir.")
-
-
-
+        except Exception as e:
+            st.error(f"❌ Analiz sırasında hata oluştu: {e}")
