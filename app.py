@@ -4,7 +4,7 @@ from docx import Document
 import io
 
 # 1. SAYFA AYARLARI
-st.set_page_config(page_title="Gereksinim Analiz Asistanı v2.2", layout="wide")
+st.set_page_config(page_title="Gereksinim Analiz Asistanı v2.3", layout="wide")
 
 # 2. SOL MENÜ
 with st.sidebar:
@@ -22,21 +22,21 @@ with st.sidebar:
             st.error("⚠️ API Hatası.")
 
 # 3. ANA EKRAN TASARIMI
-st.title("🎯 Gereksinim Analiz Asistanı (LLM Tabanlı)")
-st.markdown("Bu araç, yazılım gereksinim metinlerindeki **BELİRSİZLİKLERİ, EKSİKLİKLERİ VE MANTIKSAL ÇELİŞKİLERİ** bulmak için tasarlanmıştır.")
+st.title("🎯 Kurumsal Gereksinim & Kalite Analiz Asistanı")
+st.markdown("Bu sistem; yazılım gereksinimlerini sadece yapısal olarak değil, **Uluslararası Süreç, Test, Güvenlik ve Hukuk** standartları bağlamında 6 farklı boyutta analiz eder.")
 st.divider()
 
 # VERİ GİRİŞİ
 st.subheader("📁 Veri Girişi")
 yuklenen_dosya = st.file_uploader("Analiz edilecek Word dosyasını seçin (.docx)", type=["docx"])
-metin_alani = st.text_area("Veya analiz edilecek metni buraya yapıştırın:", height=100)
+metin_alani = st.text_area("Veya analiz edilecek metni buraya yapıştırın:", height=150)
 
 def word_oku(dosya):
     doc = Document(dosya)
     return "\n".join([p.text for p in doc.paragraphs])
 
-# 4. ANALİZ SÜRECİ
-if st.button("🚀 Analizi Başlat"):
+# 4. 6 BOYUTLU ANALİZ SÜRECİ
+if st.button("🚀 6 Boyutlu Analizi Başlat"):
     analiz_metni = word_oku(yuklenen_dosya) if yuklenen_dosya else metin_alani
 
     if not api_key or not analiz_metni:
@@ -45,12 +45,13 @@ if st.button("🚀 Analizi Başlat"):
         try:
             model = genai.GenerativeModel(secilen_model)
             
-            # PROMPT MÜHENDİSLİĞİ: 4 Kategori (Güvenlik ve Yasal Uyum Eklendi)
+            # PROMPT MÜHENDİSLİĞİ: 6 Uzmanlık Alanı
             sistem_talimati = """
-            Sen uzman bir Yazılım Gereksinim Mühendisisin. Analizlerini IEEE 29148, ISO 25010, ISO 27001 (Bilgi Güvenliği) ve KVKK/GDPR (Kişisel Veri) standartlarını temel alarak yap.
+            Sen uzman bir Yazılım Kalite Güvence (QA) Direktörü, Gereksinim Mühendisi ve Bilgi Güvenliği Uzmanısın. 
+            Metni IEEE, ISO (12207, 29119, 27001, 25010 vb.) ve KVKK standartlarına göre analiz et.
             
-            KURAL 1: Çok kısa ve net ol. Gereksiz açıklamalardan kaçın.
-            KURAL 2: Tespitlerini MUTLAKA şu 4 KATEGORİ altında, ayrı ayrı başlıklar ve TABLOLAR halinde sun:
+            KURAL 1: Çok kısa, net ve akademik ol.
+            KURAL 2: Tespitlerini MUTLAKA şu 6 KATEGORİ altında, ayrı ayrı başlıklar ve TABLOLAR halinde sun:
             
             ### 1. 🔍 Belirsizlikler (Ölçülemeyen ifadeler)
             | Gereksinim | Belirsizlik Nedeni | Standart Referansı | Önerilen Düzeltme |
@@ -60,23 +61,29 @@ if st.button("🚀 Analizi Başlat"):
             | Gereksinim | Çelişki Nedeni | Standart Referansı | Önerilen Düzeltme |
             |---|---|---|---|
             
-            ### 3. 🧩 Eksiklikler (Unutulan uç durumlar/Edge cases)
+            ### 3. 🧩 Eksiklikler (Edge Cases / Uç Durumlar)
             | Gereksinim | Eksiklik Nedeni | Standart Referansı | Önerilen Düzeltme |
             |---|---|---|---|
             
-            ### 4. 🛡️ Güvenlik ve Yasal Uyum (KVKK & ISO 27001)
-            | Gereksinim | Risk/İhlal Nedeni | Yasal/Standart Referansı | Önerilen Düzeltme |
+            ### 4. 🔄 Süreç ve Yaşam Döngüsü Standartları İhlalleri
+            | İlgili Süreç | Süreç/Yönetim Hatası | İhlal Edilen Standart (Örn: ISO 12207) | Doğru Süreç Önerisi |
             |---|---|---|---|
             
-            KURAL 3: Eğer bir kategoride hata yoksa, o tabloyu çizme; sadece başlığın altına "✅ Bu kategoride bulgu tespit edilmemiştir." yaz.
+            ### 5. 🧪 Test ve Güvenilirlik Standartları İhlalleri
+            | Test/Kalite Beklentisi | Test Edilebilirlik Sorunu | İhlal Edilen Standart (Örn: ISO 29119) | Test Stratejisi Önerisi |
+            |---|---|---|---|
+            
+            ### 6. 🛡️ Bilgi Güvenliği ve Yasal Mevzuatlar
+            | Veri/Erişim Türü | Güvenlik/Gizlilik Zafiyeti | Yasal Referans (KVKK/ISO 27001) | Çözüm Önerisi |
+            |---|---|---|---|
+            
+            KURAL 3: Eğer bir kategoride ihlal veya hata yoksa, kesinlikle boş tablo çizme. Sadece o başlığın altına "✅ Bu kategoride herhangi bir bulguya rastlanmamıştır." yaz.
             """
             
-            with st.spinner("Tüm boyutlarıyla kapsamlı analiz ediliyor..."):
+            with st.spinner("6 farklı mühendislik ve hukuk standardına göre taranıyor..."):
                 cevap = model.generate_content(f"{sistem_talimati}\n\nAnaliz edilecek metin:\n{analiz_metni}")
             
-            st.success("✅ Kapsamlı Analiz Tamamlanmıştır!")
-            
-            # SONUÇ EKRANI
+            st.success("✅ 6 Boyutlu Kapsamlı Analiz Tamamlanmıştır!")
             st.markdown(cevap.text)
             
             # 5. METRİKLER
