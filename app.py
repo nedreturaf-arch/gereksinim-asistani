@@ -23,7 +23,7 @@ with st.sidebar:
 
 # 3. ANA EKRAN TASARIMI
 st.title("🎯 Gereksinim & Kalite Analiz Asistanı")
-st.markdown(""Bu sistem; gereksinimleri **IEEE, ISO standartlarının yanı sıra KVKK ve CBDDO BİG Rehberi** kapsamında analiz eder."")
+st.markdown("Bu sistem; gereksinimleri **IEEE, ISO standartlarının yanı sıra KVKK ve CBDDO BİG Rehberi** kapsamında analiz eder.")
 st.divider()
 
 # VERİ GİRİŞİ
