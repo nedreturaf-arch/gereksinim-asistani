@@ -4,22 +4,20 @@ from docx import Document
 import io
 
 # 1. SAYFA AYARLARI
-st.set_page_config(page_title="Gereksinim Analiz Asistanı v2.5", layout="wide")
+st.set_page_config(page_title="Gereksinim Analiz Asistanı v2.6", layout="wide")
 
-# EKRAN TEMİZLEME VE HAFIZA (SESSION STATE) AYARLARI
+# EKRAN TEMİZLEME VE HAFIZA AYARLARI
 if "analiz_sonucu" not in st.session_state:
     st.session_state.analiz_sonucu = None
 if "gecmis_metin" not in st.session_state:
     st.session_state.gecmis_metin = ""
 
 def yeni_sorgu_baslat():
-    # Sadece analiz sonucunu sıfırlarız, geçmiş metne (input) dokunmayız!
     st.session_state.analiz_sonucu = None
 
 # 2. SOL MENÜ
 with st.sidebar:
     st.header("⚙️ Ayarlar")
-    # Tarayıcı kapanınca bu alan otomatik olarak güvenlik gereği sıfırlanır
     api_key = st.text_input("Gemini API Anahtarınızı girin:", type="password")
     st.divider() 
     
@@ -34,17 +32,24 @@ with st.sidebar:
 
 # 3. ANA EKRAN TASARIMI
 st.title("🎯 Gereksinim & Kalite Analiz Asistanı")
-st.markdown("**Bu sistem; yazılım gereksinimlerini sadece yapısal olarak değil, Uluslararası Süreç, Test, Güvenlik ve Hukuk standartları bağlamında analiz eder.**")
+st.markdown("Bu sistem; gereksinimleri **IEEE, ISO standartlarının yanı sıra KVKK ve CBDDO BİG Rehberi** bağlamında analiz eder.")
 st.divider()
 
-# EĞER BİR ANALİZ YAPILDIYSA SADECE SONUCU VE YENİ SORGU BUTONUNU GÖSTER
+# EĞER BİR ANALİZ YAPILDIYSA SONUCU, BUTONU VE SORGULANAN METNİ GÖSTER
 if st.session_state.analiz_sonucu:
     st.success("✅ Kapsamlı Analiz Tamamlanmıştır!")
     
+    # Şık "Yeni Sorgu" Butonu
     col1, col2, col3 = st.columns([6, 2, 2])
     with col3:
         st.button("🔄 Yeni Sorgu Yap (Metni Düzenle)", on_click=yeni_sorgu_baslat, use_container_width=True)
+    
+    # EKRANDA SORGULANAN METNİ GÖSTERME KISMI
+    st.markdown("### 📝 Analiz Edilen Metin:")
+    st.info(st.session_state.gecmis_metin)
+    st.divider()
         
+    # Yapay zekanın ürettiği tablolular
     st.markdown(st.session_state.analiz_sonucu)
     
     # 5. METRİKLER
@@ -56,13 +61,11 @@ if st.session_state.analiz_sonucu:
         c4.metric("F1 Skoru", "%87.4")
         st.caption("Bu değerler 100 adetlik etiketli veri seti üzerinde doğrulanmıştır.")
 
-# EĞER ANALİZ YOKSA VERİ GİRİŞİNİ GÖSTER (Geçmiş metin hafızadan çağrılır)
+# EĞER ANALİZ YOKSA VERİ GİRİŞİNİ GÖSTER
 else:
     st.subheader("📁 Veri Girişi")
     
     yuklenen_dosya = st.file_uploader("Analiz edilecek Word dosyasını seçin (.docx)", type=["docx"])
-    
-    # Metin alanının içine hafızadaki (st.session_state.gecmis_metin) veriyi koyuyoruz
     metin_alani = st.text_area("Veya analiz edilecek metni buraya yapıştırın:", value=st.session_state.gecmis_metin, height=150)
 
     def word_oku(dosya):
@@ -70,20 +73,18 @@ else:
         return "\n".join([p.text for p in doc.paragraphs])
 
     # 4. ANALİZ SÜRECİ
-    if st.button("🚀 Analizi Başlat"):
+    if st.button("🚀 6 Boyutlu Analizi Başlat"):
         analiz_metni = word_oku(yuklenen_dosya) if yuklenen_dosya else metin_alani
 
         if not api_key or not analiz_metni:
             st.warning("⚠️ Lütfen API anahtarını ve metni sağlayın.")
         else:
             try:
-                # Kullanıcının girdiği son metni bir sonraki sefere kaybolmasın diye hafızaya kaydediyoruz
-                if not yuklenen_dosya:
-                    st.session_state.gecmis_metin = metin_alani
+                # Ekranda göstermek için metni hafızaya alıyoruz
+                st.session_state.gecmis_metin = analiz_metni 
                 
                 model = genai.GenerativeModel(secilen_model)
                 
-                # PROMPT MÜHENDİSLİĞİ: CBDDO BİG Rehberi eklendi!
                 sistem_talimati = """
                 Sen uzman bir Yazılım Kalite Güvence (QA) Direktörü, Gereksinim Mühendisi ve Bilgi Güvenliği Uzmanısın. 
                 Metni IEEE, ISO (12207, 29119, 27001, 25010 vb.), KVKK ve Türkiye Cumhurbaşkanlığı (CBDDO) Bilgi ve İletişim Güvenliği Rehberi standartlarına göre analiz et.
@@ -116,9 +117,10 @@ else:
                 |---|---|---|---|
                 
                 KURAL 3: Eğer bir kategoride ihlal veya hata yoksa, kesinlikle boş tablo çizme. Sadece o başlığın altına "✅ Bu kategoride herhangi bir bulguya rastlanmamıştır." yaz.
+                KURAL 4: KESİNLİKLE giriş, selamlama veya "Aşağıdaki analiz..." gibi bir özet cümlesi yazma. Cevabına doğrudan "### 1. 🔍 Belirsizlikler..." başlığı ile başla.
                 """
                 
-                with st.spinner("Analiz Ediliyor..."):
+                with st.spinner("6 farklı mühendislik ve hukuk standardına göre taranıyor..."):
                     cevap = model.generate_content(f"{sistem_talimati}\n\nAnaliz edilecek metin:\n{analiz_metni}")
                 
                 st.session_state.analiz_sonucu = cevap.text
@@ -126,6 +128,3 @@ else:
 
             except Exception as e:
                 st.error(f"❌ Hata: {e}")
-
-
-
