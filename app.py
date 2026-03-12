@@ -22,8 +22,8 @@ with st.sidebar:
             st.error("⚠️ API Hatası.")
 
 # 3. ANA EKRAN
-st.title("🎯 Gereksinim Analiz Asistanı (RAG & Prompt Optimized)")
-st.markdown("Bilgin Hoca'nın geri bildirimleri doğrultusunda; tablo formatı, kısalık ve standart bazlı analiz eklendi.")
+st.title("🎯 Gereksinim Analiz Asistanı (LLM Tabanlı)")
+st.markdown("Bu araç, yazılım gereksinim metinlerindeki belirsizlikleri, eksiklikleri ve mantıksal çelişkileri bulmak için tasarlanmıştır.")
 st.divider()
 
 # VERİ GİRİŞİ
@@ -79,3 +79,4 @@ if st.button("🚀 Analizi Başlat"):
 
         except Exception as e:
             st.error(f"❌ Hata: {e}")
+
