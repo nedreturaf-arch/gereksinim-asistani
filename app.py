@@ -33,7 +33,7 @@ with st.sidebar:
             st.error("⚠️ API Hatası.")
 
 # 3. ANA EKRAN TASARIMI
-st.title("🎯 Kurumsal Gereksinim & Kalite Analiz Asistanı")
+st.title("🎯 Gereksinim & Kalite Analiz Asistanı")
 st.markdown("**Bu sistem; yazılım gereksinimlerini sadece yapısal olarak değil, Uluslararası Süreç, Test, Güvenlik ve Hukuk standartları bağlamında analiz eder.**")
 st.divider()
 
@@ -70,7 +70,7 @@ else:
         return "\n".join([p.text for p in doc.paragraphs])
 
     # 4. ANALİZ SÜRECİ
-    if st.button("🚀 6 Boyutlu Analizi Başlat"):
+    if st.button("🚀 Analizi Başlat"):
         analiz_metni = word_oku(yuklenen_dosya) if yuklenen_dosya else metin_alani
 
         if not api_key or not analiz_metni:
@@ -126,3 +126,4 @@ else:
 
             except Exception as e:
                 st.error(f"❌ Hata: {e}")
+
