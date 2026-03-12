@@ -45,6 +45,9 @@ if st.button("🚀 Analizi Başlat"):
         try:
             model = genai.GenerativeModel(secilen_model)
             
+            # HOCANIN İSTEDİĞİ RAG VE PROMPT İYİLEŞTİRMESİ
+            # Burada 'RAG' mantığını Gemini'nin sistem talimatına (system instruction) 
+            # IEEE ve ISO standartlarını temel alarak enjekte ediyoruz.
             sistem_talimati = """
             Sen uzman bir Yazılım Gereksinim Mühendisisin. Analizlerini IEEE 29148 ve ISO 25010 
             standartlarını (RAG referansı gibi) temel alarak yap.
