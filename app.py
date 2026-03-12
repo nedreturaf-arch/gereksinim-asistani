@@ -36,7 +36,7 @@ def word_oku(dosya):
     return "\n".join([p.text for p in doc.paragraphs])
 
 # 4. 6 BOYUTLU ANALİZ SÜRECİ
-if st.button("🚀 6 Boyutlu Analizi Başlat"):
+if st.button("🚀 Analizi Başlat"):
     analiz_metni = word_oku(yuklenen_dosya) if yuklenen_dosya else metin_alani
 
     if not api_key or not analiz_metni:
@@ -97,3 +97,4 @@ if st.button("🚀 6 Boyutlu Analizi Başlat"):
 
         except Exception as e:
             st.error(f"❌ Hata: {e}")
+
