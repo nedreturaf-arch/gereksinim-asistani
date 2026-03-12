@@ -4,7 +4,7 @@ from docx import Document
 import io
 
 # 1. SAYFA AYARLARI
-st.set_page_config(page_title="Gereksinim Analiz Asistanı v2.1", layout="wide")
+st.set_page_config(page_title="Gereksinim Analiz Asistanı v2.2", layout="wide")
 
 # 2. SOL MENÜ
 with st.sidebar:
@@ -23,7 +23,7 @@ with st.sidebar:
 
 # 3. ANA EKRAN TASARIMI
 st.title("🎯 Gereksinim Analiz Asistanı (LLM Tabanlı)")
-st.markdown("Bu araç, yazılım gereksinim metinlerindeki **Belirsizlik, Çelişki ve Eksiklik** olmak üzere 3 ayrı kategoriye ayrılmıştır.")
+st.markdown("Bu araç, yazılım gereksinim metinlerindeki **BELİRSİZLİKLERİ, EKSİKLİKLERİ VE MANTIKSAL ÇELİŞKİLERİ** bulmak için tasarlanmıştır.")
 st.divider()
 
 # VERİ GİRİŞİ
@@ -45,13 +45,12 @@ if st.button("🚀 Analizi Başlat"):
         try:
             model = genai.GenerativeModel(secilen_model)
             
-            # PROMPT MÜHENDİSLİĞİ: 3 Ayrı Kategori İçin Kesin Talimatlar
+            # PROMPT MÜHENDİSLİĞİ: 4 Kategori (Güvenlik ve Yasal Uyum Eklendi)
             sistem_talimati = """
-            Sen uzman bir Yazılım Gereksinim Mühendisisin. Analizlerini IEEE 29148 ve ISO 25010 
-            standartlarını (RAG referansı gibi) temel alarak yap.
+            Sen uzman bir Yazılım Gereksinim Mühendisisin. Analizlerini IEEE 29148, ISO 25010, ISO 27001 (Bilgi Güvenliği) ve KVKK/GDPR (Kişisel Veri) standartlarını temel alarak yap.
             
             KURAL 1: Çok kısa ve net ol. Gereksiz açıklamalardan kaçın.
-            KURAL 2: Tespitlerini MUTLAKA şu 3 KATEGORİ altında, ayrı ayrı başlıklar ve TABLOLAR halinde sun:
+            KURAL 2: Tespitlerini MUTLAKA şu 4 KATEGORİ altında, ayrı ayrı başlıklar ve TABLOLAR halinde sun:
             
             ### 1. 🔍 Belirsizlikler (Ölçülemeyen ifadeler)
             | Gereksinim | Belirsizlik Nedeni | Standart Referansı | Önerilen Düzeltme |
@@ -65,13 +64,17 @@ if st.button("🚀 Analizi Başlat"):
             | Gereksinim | Eksiklik Nedeni | Standart Referansı | Önerilen Düzeltme |
             |---|---|---|---|
             
+            ### 4. 🛡️ Güvenlik ve Yasal Uyum (KVKK & ISO 27001)
+            | Gereksinim | Risk/İhlal Nedeni | Yasal/Standart Referansı | Önerilen Düzeltme |
+            |---|---|---|---|
+            
             KURAL 3: Eğer bir kategoride hata yoksa, o tabloyu çizme; sadece başlığın altına "✅ Bu kategoride bulgu tespit edilmemiştir." yaz.
             """
             
-            with st.spinner("Belirsizlik, Çelişki ve Eksiklikler ayrıştırılıyor..."):
+            with st.spinner("Tüm boyutlarıyla kapsamlı analiz ediliyor..."):
                 cevap = model.generate_content(f"{sistem_talimati}\n\nAnaliz edilecek metin:\n{analiz_metni}")
             
-            st.success("✅ Kategorik Analiz Tamamlanmıştır!")
+            st.success("✅ Kapsamlı Analiz Tamamlanmıştır!")
             
             # SONUÇ EKRANI
             st.markdown(cevap.text)
