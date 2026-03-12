@@ -33,7 +33,7 @@ with st.sidebar:
             st.error("⚠️ API Hatası.")
 
 # 3. ANA EKRAN TASARIMI
-st.title("🎯 Gereksinim & Kalite Analiz Asistanı")
+st.title("🎯 Gereksinim & Kalite Analiz Asistanı"(LLM Tabanlı))
 st.markdown("**Bu sistem; yazılım gereksinimlerini sadece yapısal olarak değil, Uluslararası Süreç, Test, Güvenlik ve Hukuk standartları bağlamında analiz eder.**")
 st.divider()
 
@@ -126,4 +126,5 @@ else:
 
             except Exception as e:
                 st.error(f"❌ Hata: {e}")
+
 
