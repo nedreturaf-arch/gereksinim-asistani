@@ -57,10 +57,18 @@ if st.button("🚀 Analizi Başlat"):
         try:
             model = genai.GenerativeModel(secilen_model)
             
-            # PROMPT MÜHENDİSLİĞİ: Uzmanlık Alanı
+            # PROMPT MÜHENDİSLİĞİ: 6 Uzmanlık Alanı
             sistem_talimati = """
             Sen uzman bir Yazılım Kalite Güvence (QA) Direktörü, Gereksinim Mühendisi ve Bilgi Güvenliği Uzmanısın. 
             Metni IEEE, ISO (12207, 29119, 27001, 25010 vb.), KVKK ve Türkiye Cumhurbaşkanlığı (CBDDO) Bilgi ve İletişim Güvenliği Rehberi standartlarına göre analiz et.
+
+            KURAL 1: KESİNLİKLE giriş cümlesi, selamlama veya "analiz ettim/ediyorum" gibi açıklamalar YAZMA. Cevabına DOĞRUDAN 1. başlık ile başla. Sadece tabloları ve başlıkları ver.
+            KURAL 2: Çok kısa, net ve akademik ol.
+            KURAL 3: Tespitlerini MUTLAKA şu 6 KATEGORİ altında, ayrı ayrı başlıklar ve TABLOLAR halinde sun:
+            
+            ### 1. 🔍 Belirsizlikler (Ölçülemeyen ifadeler)
+            | Gereksinim | Belirsizlik Nedeni | Standart Referansı | Önerilen Düzeltme |
+            |---|---|---|---|
 
             
             KURAL 1: Çok kısa, net ve akademik ol.
