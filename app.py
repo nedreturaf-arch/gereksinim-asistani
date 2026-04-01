@@ -134,4 +134,9 @@ if st.button("🚀 Analizi Başlat"):
                 st.divider()
                 st.markdown("""
                 **💡 Analiz Özeti:**
-                RAG mimarisi ve yasal standartlar devreye girdiğinde modelin uydurma (halüsinasyon) yapma ihtimali ortadan kalkmış, **Kesinlik (Precision)** oranında ciddi bir artış gözlemlenmiştir. Duyarlılıktaki (Recall) %1'
+                RAG mimarisi ve yasal standartlar devreye girdiğinde modelin uydurma (halüsinasyon) yapma ihtimali ortadan kalkmış, **Kesinlik (Precision)** oranında ciddi bir artış gözlemlenmiştir. Duyarlılıktaki (Recall) %1'lik minimal düşüş ise, sistemin artık sadece "resmi standartlarla kanıtlanabilen" hataları raporlamasından kaynaklı, beklenen bir durumdur.
+                """)
+                
+        # İŞTE SENİN KODUNDA SİLİNEN O KRİTİK SATIRLAR BURASIYDI:
+        except Exception as e:
+            st.error(f"❌ Hata: {e}")
