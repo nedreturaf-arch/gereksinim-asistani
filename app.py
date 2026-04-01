@@ -24,7 +24,17 @@ with st.sidebar:
 
 # 3. ANA EKRAN TASARIMI
 st.title("🎯 Gereksinim & Kalite Analiz Asistanı")
-st.markdown("Bu sistem; gereksinimleri **IEEE, ISO standartlarının yanı sıra KVKK ve CBDDO BİG Rehberi** kapsamında analiz eder.")
+
+st.info("""
+**📖 Referans Alınan Temel Standartlar ve Mevzuatlar:**
+* **IEEE 29148:** Sistem ve Yazılım Mühendisliği - Gereksinim Mühendisliği Süreçleri
+* **ISO/IEC 25010:** Yazılım Kalite Modelleri ve Değerlendirmesi (SQuaRE)
+* **ISO/IEC 12207:** Yazılım Yaşam Döngüsü Süreçleri
+* **ISO/IEC 29119:** Yazılım Test Standartları
+* **ISO/IEC 27001:** Bilgi Güvenliği Yönetim Sistemi
+* **KVKK:** 6698 Sayılı Kişisel Verilerin Korunması Kanunu
+* **CBDDO BİG Rehberi:** T.C. Cumhurbaşkanlığı Bilgi ve İletişim Güvenliği Rehberi
+""")
 st.divider()
 
 st.subheader("📁 Veri Girişi")
