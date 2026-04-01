@@ -22,6 +22,6 @@ Yazılım projelerindeki hataların büyük bir kısmı analiz aşamasındaki be
 
 1. **Depoyu klonlayın:**
    ```bash
-   git clone [https://github.com/nedreturaf-arch/gereksinim-asistani.git](https://github.com/nedreturaf-arch/gereksinim-asistani.git)
-   cd gereksinim-asistani
+ [  git clone [https://github.com/nedreturaf-arch/gereksinim-asistani.git](https://github.com/nedreturaf-arch/gereksinim-asistani.git)
+   cd gereksinim-asistani](https://github.com/nedreturaf-arch/gereksinim-asistani)
 
