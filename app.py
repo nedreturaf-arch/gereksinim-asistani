@@ -1,6 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
 from docx import Document
+import PyPDF2
 import io
 
 # 1. SAYFA AYARLARI
@@ -26,18 +27,29 @@ st.title("🎯 Gereksinim & Kalite Analiz Asistanı")
 st.markdown("Bu sistem; gereksinimleri **IEEE, ISO standartlarının yanı sıra KVKK ve CBDDO BİG Rehberi** kapsamında analiz eder.")
 st.divider()
 
-# VERİ GİRİŞİ
 st.subheader("📁 Veri Girişi")
-yuklenen_dosya = st.file_uploader("Analiz edilecek Word dosyasını seçin (.docx)", type=["docx"])
+# file_uploader'a 'pdf' uzantısını da ekledik
+yuklenen_dosya = st.file_uploader("Analiz edilecek dosyayı seçin (.docx, .pdf)", type=["docx", "pdf"])
 metin_alani = st.text_area("Veya analiz edilecek metni buraya yapıştırın:", height=150)
 
-def word_oku(dosya):
-    doc = Document(dosya)
-    return "\n".join([p.text for p in doc.paragraphs])
+def dosya_oku(dosya):
+    # Eğer dosya Word ise
+    if dosya.name.endswith('.docx'):
+        doc = Document(dosya)
+        return "\n".join([p.text for p in doc.paragraphs])
+    # Eğer dosya PDF ise
+    elif dosya.name.endswith('.pdf'):
+        pdf_reader = PyPDF2.PdfReader(dosya)
+        metin = ""
+        for sayfa in range(len(pdf_reader.pages)):
+            metin += pdf_reader.pages[sayfa].extract_text() + "\n"
+        return metin
+    return ""
 
 # 4. ANALİZ SÜRECİ
 if st.button("🚀 Analizi Başlat"):
-    analiz_metni = word_oku(yuklenen_dosya) if yuklenen_dosya else metin_alani
+    # word_oku yerine yeni yazdığımız dosya_oku fonksiyonunu çağırıyoruz
+    analiz_metni = dosya_oku(yuklenen_dosya) if yuklenen_dosya else metin_alani
 
     if not api_key or not analiz_metni:
         st.warning("⚠️ Lütfen API anahtarını ve metni sağlayın.")
@@ -45,7 +57,7 @@ if st.button("🚀 Analizi Başlat"):
         try:
             model = genai.GenerativeModel(secilen_model)
             
-            # PROMPT MÜHENDİSLİĞİ: 6 Uzmanlık Alanı
+            # PROMPT MÜHENDİSLİĞİ: Uzmanlık Alanı
             sistem_talimati = """
             Sen uzman bir Yazılım Kalite Güvence (QA) Direktörü, Gereksinim Mühendisi ve Bilgi Güvenliği Uzmanısın. 
             Metni IEEE, ISO (12207, 29119, 27001, 25010 vb.), KVKK ve Türkiye Cumhurbaşkanlığı (CBDDO) Bilgi ve İletişim Güvenliği Rehberi standartlarına göre analiz et.
