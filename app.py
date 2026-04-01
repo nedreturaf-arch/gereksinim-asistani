@@ -5,7 +5,7 @@ import PyPDF2
 import io
 
 # 1. SAYFA AYARLARI
-st.set_page_config(page_title="Gereksinim Analiz Asistanı v2.3", layout="wide")
+st.set_page_config(page_title="Gereksinim Analiz Asistanı v3.0", layout="wide")
 
 # 2. SOL MENÜ
 with st.sidebar:
@@ -24,7 +24,6 @@ with st.sidebar:
 
 # 3. ANA EKRAN TASARIMI
 st.title("🎯 Gereksinim & Kalite Analiz Asistanı")
-
 st.info("""
 **📖 Referans Alınan Temel Standartlar ve Mevzuatlar:**
 * **IEEE 29148:** Sistem ve Yazılım Mühendisliği - Gereksinim Mühendisliği Süreçleri
@@ -37,28 +36,29 @@ st.info("""
 """)
 st.divider()
 
+# VERİ GİRİŞİ
 st.subheader("📁 Veri Girişi")
-# file_uploader'a 'pdf' uzantısını da ekledik
 yuklenen_dosya = st.file_uploader("Analiz edilecek dosyayı seçin (.docx, .pdf)", type=["docx", "pdf"])
 metin_alani = st.text_area("Veya analiz edilecek metni buraya yapıştırın:", height=150)
 
 def dosya_oku(dosya):
-    # Eğer dosya Word ise
-    if dosya.name.endswith('.docx'):
-        doc = Document(dosya)
-        return "\n".join([p.text for p in doc.paragraphs])
-    # Eğer dosya PDF ise
-    elif dosya.name.endswith('.pdf'):
-        pdf_reader = PyPDF2.PdfReader(dosya)
-        metin = ""
-        for sayfa in range(len(pdf_reader.pages)):
-            metin += pdf_reader.pages[sayfa].extract_text() + "\n"
-        return metin
+    try:
+        if dosya.name.endswith('.docx'):
+            doc = Document(dosya)
+            return "\n".join([p.text for p in doc.paragraphs])
+        elif dosya.name.endswith('.pdf'):
+            pdf_reader = PyPDF2.PdfReader(dosya)
+            metin = ""
+            for sayfa in range(len(pdf_reader.pages)):
+                metin += pdf_reader.pages[sayfa].extract_text() + "\n"
+            return metin
+    except Exception as e:
+        st.error(f"Dosya okuma sırasında bir hata oluştu: {e}")
+        return ""
     return ""
 
 # 4. ANALİZ SÜRECİ
 if st.button("🚀 Analizi Başlat"):
-    # word_oku yerine yeni yazdığımız dosya_oku fonksiyonunu çağırıyoruz
     analiz_metni = dosya_oku(yuklenen_dosya) if yuklenen_dosya else metin_alani
 
     if not api_key or not analiz_metni:
@@ -75,14 +75,6 @@ if st.button("🚀 Analizi Başlat"):
             KURAL 1: KESİNLİKLE giriş cümlesi, selamlama veya "analiz ettim/ediyorum" gibi açıklamalar YAZMA. Cevabına DOĞRUDAN 1. başlık ile başla. Sadece tabloları ve başlıkları ver.
             KURAL 2: Çok kısa, net ve akademik ol.
             KURAL 3: Tespitlerini MUTLAKA şu 6 KATEGORİ altında, ayrı ayrı başlıklar ve TABLOLAR halinde sun:
-            
-            ### 1. 🔍 Belirsizlikler (Ölçülemeyen ifadeler)
-            | Gereksinim | Belirsizlik Nedeni | Standart Referansı | Önerilen Düzeltme |
-            |---|---|---|---|
-
-            
-            KURAL 1: Çok kısa, net ve akademik ol.
-            KURAL 2: Tespitlerini MUTLAKA şu 6 KATEGORİ altında, ayrı ayrı başlıklar ve TABLOLAR halinde sun:
             
             ### 1. 🔍 Belirsizlikler (Ölçülemeyen ifadeler)
             | Gereksinim | Belirsizlik Nedeni | Standart Referansı | Önerilen Düzeltme |
@@ -117,11 +109,10 @@ if st.button("🚀 Analizi Başlat"):
             st.success("✅ Kapsamlı Analiz Tamamlanmıştır!")
             st.markdown(cevap.text)
             
-           # 5. METRİKLER (KARŞILAŞTIRMALI ANALİZ)
+            # 5. METRİKLER (KARŞILAŞTIRMALI ANALİZ)
             with st.expander("📈 Sistem Başarı Metrikleri (Karşılaştırmalı Analiz)"):
                 st.markdown("Aşağıdaki tabloda, gereksinim analizinin standart bir modelle (Geleneksel) yapılması durumu ile **RAG Mimarisi ve Kurumsal Standartlar** (IEEE, ISO, KVKK) entegre edilerek yapılması durumu arasındaki performans farkı gösterilmiştir.")
                 
-                # Ekranı iki eşit sütuna bölüyoruz
                 col1, col2 = st.columns(2)
                 
                 with col1:
@@ -135,7 +126,6 @@ if st.button("🚀 Analizi Başlat"):
                 with col2:
                     st.info("🎯 Önerilen Yöntem (RAG + Standartlar)")
                     st.caption("IEEE, ISO ve KVKK referans alındığında:")
-                    # delta (yeşil/kırmızı ok) değerlerini sadece yeni yönteme ekliyoruz
                     st.metric("Doğruluk (Accuracy)", "%94", "7% artış")
                     st.metric("Kesinlik (Precision)", "%92", "7% artış")
                     st.metric("Duyarlılık (Recall)", "%89", "-1% düşüş") 
@@ -144,5 +134,4 @@ if st.button("🚀 Analizi Başlat"):
                 st.divider()
                 st.markdown("""
                 **💡 Analiz Özeti:**
-                RAG mimarisi ve yasal standartlar devreye girdiğinde modelin uydurma (halüsinasyon) yapma ihtimali ortadan kalkmış, **Kesinlik (Precision)** oranında ciddi bir artış gözlemlenmiştir. Duyarlılıktaki (Recall) %1'lik minimal düşüş ise, sistemin artık sadece "resmi standartlarla kanıtlanabilen" hataları raporlamasından kaynaklı, beklenen bir durumdur.
-                """)
+                RAG mimarisi ve yasal standartlar devreye girdiğinde modelin uydurma (halüsinasyon) yapma ihtimali ortadan kalkmış, **Kesinlik (Precision)** oranında ciddi bir artış gözlemlenmiştir. Duyarlılıktaki (Recall) %1'
