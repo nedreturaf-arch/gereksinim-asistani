@@ -107,59 +107,44 @@ if st.button("🚀 Analizi Başlat"):
             st.success("✅ Kapsamlı Uyumluluk Analizi Tamamlanmıştır!")
             st.markdown(cevap.text)
             
-            # 5. METRİKLER (KARŞILAŞTIRMALI ANALİZ VE MATEMATİKSEL ALTYAPI)
-            with st.expander("📈 Sistem Başarı Metrikleri ve Matematiksel Altyapı"):
-                # Kullanıcıyı boğmamak için iki sekme oluşturuyoruz
-                tab1, tab2 = st.tabs(["📊 Karşılaştırmalı Sonuçlar", "🧮 Bu Değerler Nasıl Hesaplanıyor?"])
+            # 5. DİNAMİK DOKÜMAN KALİTE VE UYUM SKORU HESAPLAMASI
+            with st.expander("📊 Doküman Kalite ve Uyum Skoru"):
+                # Yapay zekanın ürettiği tablolardaki hata satırlarını sayan basit algoritma
+                satirlar = cevap.text.split('\n')
+                hata_sayisi = 0
+                for satir in satirlar:
+                    # Tablo satırıysa, başlık veya ayırıcı değilse ve 5. tablo (başarı tablosu) değilse say
+                    if "|" in satir and "---" not in satir and "Gereksinim" not in satir and "Örnek Başarılı" not in satir and "✅" not in satir:
+                        hata_sayisi += 1
                 
-                with tab1:
-                    st.markdown("Aşağıdaki tabloda, gereksinim analizinin standart bir modelle (Geleneksel) yapılması durumu ile **RAG Mimarisi ve Kurumsal Standartlar** (IEEE, ISO, KVKK) entegre edilerek yapılması durumu arasındaki performans farkı gösterilmiştir.")
-                    
-                    col1, col2 = st.columns(2)
-                    
-                    with col1:
-                        st.success("Standart Yöntem (Sadece LLM)")
-                        st.caption("Herhangi bir mevzuat referansı olmadan:")
-                        st.metric("Doğruluk (Accuracy)", "%87")
-                        st.metric("Kesinlik (Precision)", "%85")
-                        st.metric("Duyarlılık (Recall)", "%90")
-                        st.metric("F1 Skoru", "%87.4")
-                        
-                    with col2:
-                        st.info("🎯 Önerilen Yöntem (RAG + Standartlar)")
-                        st.caption("IEEE, ISO ve KVKK referans alındığında:")
-                        st.metric("Doğruluk (Accuracy)", "%94", "7% artış")
-                        st.metric("Kesinlik (Precision)", "%92", "7% artış")
-                        st.metric("Duyarlılık (Recall)", "%89", "-1% düşüş") 
-                        st.metric("F1 Skoru", "%90.5", "3.1% artış")
+                # Skor Hesaplama (100 üzerinden başlar, her hata için ortalama 6 puan kırılır)
+                # Puan sıfırın altına düşmesin diye max(0, ...) kullanıyoruz
+                mevcut_skor = max(0, 100 - (hata_sayisi * 6))
                 
-                with tab2:
-                    st.markdown("### Karmaşıklık Matrisi (Confusion Matrix) Temelleri")
-                    st.info("""
-                    Yapay zeka modellerinin başarısı **4 temel duruma** göre ölçülür:
-                    * **Doğru Pozitif (TP):** Sistem 'Hata var' dedi ve gereksinimde gerçekten hata var.
-                    * **Yanlış Pozitif (FP):** Sistem 'Hata var' dedi ama aslında hata yok *(Yapay Zeka Halüsinasyonu)*.
-                    * **Doğru Negatif (TN):** Sistem 'Hata yok' dedi ve gerçekten hata yok.
-                    * **Yanlış Negatif (FN):** Sistem 'Hata yok' dedi ama aslında hata var *(Gözden Kaçırma)*.
-                    """)
+                st.markdown(f"Bu analiz sonucunda dokümanda toplam **{hata_sayisi} adet** standart veya mevzuat ihlali tespit edilmiştir.")
+                
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.error("📄 Dokümanın Mevcut Hali")
+                    st.caption("Standartlar uygulanmadan önce:")
+                    st.metric("Genel Uyum Skoru", f"% {mevcut_skor}", f"-{hata_sayisi} Kritik Bulgu")
                     
-                    st.divider()
+                with col2:
+                    st.warning("🛠️ Düzeltme Eforu")
+                    st.caption("Gereken revizyon miktarı:")
+                    st.metric("İncelenmesi Gereken Madde", f"{hata_sayisi} Adet")
                     
-                    st.markdown("#### 1. Doğruluk (Accuracy)")
-                    st.markdown("Sistemin verdiği tüm kararların (hatalı veya hatasız dediklerinin) yüzde kaçının doğru olduğunu gösterir.")
-                    st.latex(r"Accuracy = \frac{TP + TN}{TP + TN + FP + FN}")
-                    
-                    st.markdown("#### 2. Kesinlik (Precision)")
-                    st.markdown("Sistemin işaretlediği hataların ne kadarının **gerçekten** hata olduğunu gösterir. RAG mimarisi bu değeri yükselterek halüsinasyonları (FP) önler.")
-                    st.latex(r"Precision = \frac{TP}{TP + FP}")
-                    
-                    st.markdown("#### 3. Duyarlılık (Recall)")
-                    st.markdown("Gerçekte var olan hataların ne kadarını sistemin **yakalayabildiğini** gösterir.")
-                    st.latex(r"Recall = \frac{TP}{TP + FN}")
-                    
-                    st.markdown("#### 4. F1 Skoru")
-                    st.markdown("Kesinlik ve Duyarlılığın dengeli (harmonik) ortalamasıdır. Sistemin genel güvenilirliğini ifade eder.")
-                    st.latex(r"F1 = 2 \times \frac{Precision \times Recall}{Precision + Recall}")
+                with col3:
+                    st.success("🎯 Hedeflenen Durum")
+                    st.caption("Önerilen düzeltmeler yapıldığında:")
+                    st.metric("Ulaşılan Uyum Skoru", "% 100", f"+{100 - mevcut_skor} Puan Artış")
+                
+                st.divider()
+                st.info("""
+                **💡 Puanlama Mantığı:**
+                Sisteme yüklediğiniz gereksinim belgesi 100 tam puan üzerinden değerlendirilir. IEEE, ISO ve KVKK standartlarına uymayan, ölçülemeyen veya güvenlik riski taşıyan her bir madde için sistem dinamik olarak puan kırar. Amacımız, yapay zekanın tablolar halinde sunduğu "Uyumlu Hale Getirme Önerileri"ni uygulayarak dokümanınızı %100 uyumlu (Audit-Ready) hale getirmektir.
+                """)
         
         except Exception as e:
             st.error(f"❌ Hata: {e}")
