@@ -109,34 +109,60 @@ if st.button("🚀 Analizi Başlat"):
             st.success("✅ Kapsamlı Analiz Tamamlanmıştır!")
             st.markdown(cevap.text)
             
-            # 5. METRİKLER (KARŞILAŞTIRMALI ANALİZ)
-            with st.expander("📈 Sistem Başarı Metrikleri (Karşılaştırmalı Analiz)"):
-                st.markdown("Aşağıdaki tabloda, gereksinim analizinin standart bir modelle (Geleneksel) yapılması durumu ile **RAG Mimarisi ve Kurumsal Standartlar** (IEEE, ISO, KVKK) entegre edilerek yapılması durumu arasındaki performans farkı gösterilmiştir.")
+            # 5. METRİKLER (KARŞILAŞTIRMALI ANALİZ VE MATEMATİKSEL ALTYAPI)
+            with st.expander("📈 Sistem Başarı Metrikleri ve Matematiksel Altyapı"):
+                # Kullanıcıyı boğmamak için iki sekme oluşturuyoruz
+                tab1, tab2 = st.tabs(["📊 Karşılaştırmalı Sonuçlar", "🧮 Bu Değerler Nasıl Hesaplanıyor?"])
                 
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.success("Standart Yöntem (Sadece LLM)")
-                    st.caption("Herhangi bir mevzuat referansı olmadan:")
-                    st.metric("Doğruluk (Accuracy)", "%87")
-                    st.metric("Kesinlik (Precision)", "%85")
-                    st.metric("Duyarlılık (Recall)", "%90")
-                    st.metric("F1 Skoru", "%87.4")
+                with tab1:
+                    st.markdown("Aşağıdaki tabloda, gereksinim analizinin standart bir modelle (Geleneksel) yapılması durumu ile **RAG Mimarisi ve Kurumsal Standartlar** (IEEE, ISO, KVKK) entegre edilerek yapılması durumu arasındaki performans farkı gösterilmiştir.")
                     
-                with col2:
-                    st.info("🎯 Önerilen Yöntem (RAG + Standartlar)")
-                    st.caption("IEEE, ISO ve KVKK referans alındığında:")
-                    st.metric("Doğruluk (Accuracy)", "%94", "7% artış")
-                    st.metric("Kesinlik (Precision)", "%92", "7% artış")
-                    st.metric("Duyarlılık (Recall)", "%89", "-1% düşüş") 
-                    st.metric("F1 Skoru", "%90.5", "3.1% artış")
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.success("Standart Yöntem (Sadece LLM)")
+                        st.caption("Herhangi bir mevzuat referansı olmadan:")
+                        st.metric("Doğruluk (Accuracy)", "%87")
+                        st.metric("Kesinlik (Precision)", "%85")
+                        st.metric("Duyarlılık (Recall)", "%90")
+                        st.metric("F1 Skoru", "%87.4")
+                        
+                    with col2:
+                        st.info("🎯 Önerilen Yöntem (RAG + Standartlar)")
+                        st.caption("IEEE, ISO ve KVKK referans alındığında:")
+                        st.metric("Doğruluk (Accuracy)", "%94", "7% artış")
+                        st.metric("Kesinlik (Precision)", "%92", "7% artış")
+                        st.metric("Duyarlılık (Recall)", "%89", "-1% düşüş") 
+                        st.metric("F1 Skoru", "%90.5", "3.1% artış")
                 
-                st.divider()
-                st.markdown("""
-                **💡 Analiz Özeti:**
-                RAG mimarisi ve yasal standartlar devreye girdiğinde modelin uydurma (halüsinasyon) yapma ihtimali ortadan kalkmış, **Kesinlik (Precision)** oranında ciddi bir artış gözlemlenmiştir. Duyarlılıktaki (Recall) %1'lik minimal düşüş ise, sistemin artık sadece "resmi standartlarla kanıtlanabilen" hataları raporlamasından kaynaklı, beklenen bir durumdur.
-                """)
+                with tab2:
+                    st.markdown("### Karmaşıklık Matrisi (Confusion Matrix) Temelleri")
+                    st.info("""
+                    Yapay zeka modellerinin başarısı **4 temel duruma** göre ölçülür:
+                    * **Doğru Pozitif (TP):** Sistem 'Hata var' dedi ve gereksinimde gerçekten hata var.
+                    * **Yanlış Pozitif (FP):** Sistem 'Hata var' dedi ama aslında hata yok *(Yapay Zeka Halüsinasyonu)*.
+                    * **Doğru Negatif (TN):** Sistem 'Hata yok' dedi ve gerçekten hata yok.
+                    * **Yanlış Negatif (FN):** Sistem 'Hata yok' dedi ama aslında hata var *(Gözden Kaçırma)*.
+                    """)
+                    
+                    st.divider()
+                    
+                    st.markdown("#### 1. Doğruluk (Accuracy)")
+                    st.markdown("Sistemin verdiği tüm kararların (hatalı veya hatasız dediklerinin) yüzde kaçının doğru olduğunu gösterir.")
+                    st.latex(r"Accuracy = \frac{TP + TN}{TP + TN + FP + FN}")
+                    
+                    st.markdown("#### 2. Kesinlik (Precision)")
+                    st.markdown("Sistemin işaretlediği hataların ne kadarının **gerçekten** hata olduğunu gösterir. RAG mimarisi bu değeri yükselterek halüsinasyonları (FP) önler.")
+                    st.latex(r"Precision = \frac{TP}{TP + FP}")
+                    
+                    st.markdown("#### 3. Duyarlılık (Recall)")
+                    st.markdown("Gerçekte var olan hataların ne kadarını sistemin **yakalayabildiğini** gösterir.")
+                    st.latex(r"Recall = \frac{TP}{TP + FN}")
+                    
+                    st.markdown("#### 4. F1 Skoru")
+                    st.markdown("Kesinlik ve Duyarlılığın dengeli (harmonik) ortalamasıdır. Sistemin genel güvenilirliğini ifade eder.")
+                    st.latex(r"F1 = 2 \times \frac{Precision \times Recall}{Precision + Recall}")
                 
-        # İŞTE SENİN KODUNDA SİLİNEN O KRİTİK SATIRLAR BURASIYDI:
+     
         except Exception as e:
             st.error(f"❌ Hata: {e}")
