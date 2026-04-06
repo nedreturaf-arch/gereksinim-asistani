@@ -74,6 +74,11 @@ if st.button("🚀 Analizi Başlat"):
             KURAL 1: KESİNLİKLE giriş cümlesi, selamlama veya "analiz ettim" gibi açıklamalar YAZMA. Cevabına DOĞRUDAN 1. başlık ile başla.
             KURAL 2: Mimari tasarım kararlarını, proje yönetim süreçlerini veya bütçe/eğitim gibi konuları eleştirme. Sen sadece yazılı gereksinimlerin standartlara uygunluğunu denetleyen bir araçsın. Aşırı mühendislik (overengineering) yapma.
             KURAL 3: Çıktını DOĞRUDAN aşağıdaki 5 TABLO formatında ver. Eğer bir standart açısından ihlal yoksa o başlığın altına "✅ Bu standart açısından tam uyum sağlanmıştır." yaz.
+            KURAL 4: RİSK GÖRSELLEŞTİRME: Tablolardaki 'Gereksinim' sütununda yer alan her maddenin başına, o tablonun risk seviyesine uygun şu emojileri ve etiketleri KESİNLİKLE EKLE:
+            - Tablo 1 (IEEE 29148) hataları için: 🟡 [ORTA RİSK] 
+            - Tablo 2 ve 3 (KVKK, ISO 27001) hataları için: 🔴 [KRİTİK RİSK] 
+            - Tablo 4 (ISO 25010) hataları için: 🟠 [YÜKSEK RİSK] 
+            - Tablo 5 (Başarılı Örnekler) için: 🟢 [KUSURSUZ] 
 
             ### 1. 📏 IEEE 29148 Gereksinim Kalitesi Uyumluluğu
             *(Netlik, Ölçülebilirlik, Çelişmezlik ve İzlenebilirlik denetimi)*
@@ -96,7 +101,7 @@ if st.button("🚀 Analizi Başlat"):
             |---|---|---|---|
 
             ### 5. 🌟 Standartlara Tam Uyumlu (Örnek) Gereksinimler
-            *(Belgedeki en başarılı, ölçülebilir ve yasalara tam uyumlu 3 gereksinimi seçerek neden başarılı olduklarını açıkla. Bu, sistemin sadece hata aramadığını, doğruları da onayladığını gösterir.)*
+            *(Belgedeki en başarılı, ölçülebilir ve yasalara tam uyumlu 3 gereksinimi seçerek neden başarılı olduklarını açıkla.)*
             | Örnek Başarılı Gereksinim | Karşıladığı Standartlar | Neden Uyumlu ve Başarılı? |
             |---|---|---|
             """
@@ -107,65 +112,85 @@ if st.button("🚀 Analizi Başlat"):
             st.success("✅ Kapsamlı Uyumluluk Analizi Tamamlanmıştır!")
             st.markdown(cevap.text)
             
-           # 5. DİNAMİK DOKÜMAN KALİTE VE UYUM SKORU HESAPLAMASI (ISTQB Risk Temelli)
-            with st.expander("📊 Doküman Kalite ve Uyum Skoru"):
-                # Yapay zekanın ürettiği tablolardan dinamik risk analizi
-                satirlar = cevap.text.split('\n')
+            # 5. METRİKLER (KARŞILAŞTIRMALI ANALİZ VE MATEMATİKSEL ALTYAPI)
+            with st.expander("📊 Doküman Kalite Skoru ve Yapay Zeka Metrikleri"):
+                # Kullanıcıyı boğmamak için iki sekme oluşturuyoruz
+                tab1, tab2 = st.tabs(["📝 Dinamik Uyum Skoru (ISTQB)", "🧮 Yapay Zeka Karmaşıklık Matrisi (Akademik)"])
                 
-                kritik_hata = 0 # KVKK ve Güvenlik (-10 Puan)
-                yuksek_hata = 0 # Kalite ve Performans (-6 Puan)
-                orta_hata = 0   # Netlik ve Belirsizlik (-3 Puan)
-                
-                aktif_tablo = 0
-                for satir in satirlar:
-                    # Sistemin hangi tabloyu okuduğunu anlıyoruz
-                    if "IEEE 29148" in satir: aktif_tablo = 1
-                    elif "KVKK" in satir: aktif_tablo = 2
-                    elif "ISO 27001" in satir: aktif_tablo = 3
-                    elif "ISO 25010" in satir: aktif_tablo = 4
-                    elif "Standartlara Tam Uyumlu" in satir: aktif_tablo = 5
+                with tab1:
+                    # Ağırlıklı Skor Hesaplama Algoritması (ISTQB Risk Temelli)
+                    satirlar = cevap.text.split('\n')
                     
-                    # Tablo satırlarını sayma ve risk ağırlığına göre sınıflandırma
-                    if "|" in satir and "---" not in satir and "Gereksinim" not in satir and "✅" not in satir and aktif_tablo != 5:
-                        if aktif_tablo in [2, 3]: 
-                            kritik_hata += 1
-                        elif aktif_tablo == 4: 
-                            yuksek_hata += 1
-                        elif aktif_tablo == 1: 
-                            orta_hata += 1
-                
-                toplam_hata = kritik_hata + yuksek_hata + orta_hata
-                kesilen_puan = (kritik_hata * 10) + (yuksek_hata * 6) + (orta_hata * 3)
-                mevcut_skor = max(0, 100 - kesilen_puan)
-                
-                st.markdown(f"Bu analiz sonucunda dokümanda toplam **{toplam_hata} adet** standart veya mevzuat ihlali tespit edilmiştir.")
-                
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    st.error("📄 Dokümanın Mevcut Durumu")
-                    st.caption("Standartlar uygulanmadan önce:")
-                    st.metric("Genel Uyum Skoru", f"% {mevcut_skor}", f"-{kesilen_puan} Ceza Puanı")
+                    kritik_hata = 0 # KVKK ve Güvenlik (-10 Puan)
+                    yuksek_hata = 0 # Kalite ve Performans (-6 Puan)
+                    orta_hata = 0   # Netlik ve Belirsizlik (-3 Puan)
                     
-                with col2:
-                    st.warning("⚠️ Risk Dağılımı")
-                    st.caption("ISTQB Risk Temelli Analiz:")
-                    st.markdown(f"**{kritik_hata}** Kritik | **{yuksek_hata}** Yüksek | **{orta_hata}** Orta")
+                    aktif_tablo = 0
+                    for satir in satirlar:
+                        if "IEEE 29148" in satir: aktif_tablo = 1
+                        elif "KVKK" in satir: aktif_tablo = 2
+                        elif "ISO 27001" in satir: aktif_tablo = 3
+                        elif "ISO 25010" in satir: aktif_tablo = 4
+                        elif "Standartlara Tam Uyumlu" in satir: aktif_tablo = 5
+                        
+                        if "|" in satir and "---" not in satir and "Gereksinim" not in satir and "✅" not in satir and aktif_tablo != 5:
+                            if aktif_tablo in [2, 3]: kritik_hata += 1
+                            elif aktif_tablo == 4: yuksek_hata += 1
+                            elif aktif_tablo == 1: orta_hata += 1
                     
-                with col3:
-                    st.success("🎯 Hedeflenen Durum")
-                    st.caption("Önerilen düzeltmeler yapıldığında:")
-                    st.metric("Ulaşılan Uyum Skoru", "% 100", f"+{100 - mevcut_skor} Puan Artış")
-                
-                st.divider()
-                st.info("""
-                **💡 ISTQB Risk Temelli Puanlama Mantığı:**
-                Sisteme yüklediğiniz belge 100 tam puan üzerinden değerlendirilir. Hatalar önem derecesine göre ağırlıklandırılmıştır:
-                * **Kritik Riskler (-10 Puan):** KVKK ihlalleri ve ISO 27001 bilgi güvenliği zafiyetleri.
-                * **Yüksek Riskler (-6 Puan):** ISO 25010 mimari kalite, performans ve kullanılabilirlik hataları.
-                * **Orta Riskler (-3 Puan):** IEEE 29148 ölçülebilirlik ve belirsizlik ihlalleri.
-                Amacımız, sistemin sunduğu tabloları rehber alarak dokümanı **%100 (Audit-Ready)** seviyesine çıkarmaktır.
-                """)
+                    toplam_hata = kritik_hata + yuksek_hata + orta_hata
+                    kesilen_puan = (kritik_hata * 10) + (yuksek_hata * 6) + (orta_hata * 3)
+                    mevcut_skor = max(0, 100 - kesilen_puan)
+                    
+                    st.markdown(f"Bu analiz sonucunda dokümanda toplam **{toplam_hata} adet** standart veya mevzuat ihlali tespit edilmiştir.")
+                    
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        st.error("📄 Dokümanın Mevcut Durumu")
+                        st.caption("Standartlar uygulanmadan önce:")
+                        st.metric("Genel Uyum Skoru", f"% {mevcut_skor}", f"-{kesilen_puan} Ceza Puanı")
+                        
+                    with col2:
+                        st.warning("⚠️ Risk Dağılımı")
+                        st.caption("ISTQB Risk Temelli Analiz:")
+                        st.markdown(f"**🔴 {kritik_hata}** Kritik | **🟠 {yuksek_hata}** Yüksek | **🟡 {orta_hata}** Orta")
+                        
+                    with col3:
+                        st.success("🎯 Hedeflenen Durum")
+                        st.caption("Önerilen düzeltmeler yapıldığında:")
+                        st.metric("Ulaşılan Uyum Skoru", "% 100", f"+{100 - mevcut_skor} Puan Artış")
+                    
+                    st.divider()
+                    st.info("""
+                    **💡 ISTQB Risk Temelli Puanlama Mantığı:**
+                    Sisteme yüklediğiniz belge 100 tam puan üzerinden değerlendirilir. Hatalar önem derecesine göre ağırlıklandırılmıştır:
+                    * **Kritik Riskler (-10 Puan):** KVKK ihlalleri ve ISO 27001 bilgi güvenliği zafiyetleri.
+                    * **Yüksek Riskler (-6 Puan):** ISO 25010 mimari kalite, performans ve kullanılabilirlik hataları.
+                    * **Orta Riskler (-3 Puan):** IEEE 29148 ölçülebilirlik ve belirsizlik ihlalleri.
+                    """)
+
+                with tab2:
+                    st.markdown("### Karmaşıklık Matrisi (Confusion Matrix) Temelleri")
+                    st.info("""
+                    Bu sekme, aracın arka planında çalışan Yapay Zeka modelinin hata yakalama performansını ölçen akademik formülleri içerir. Projenin test aşamasında referans (kusursuz) dokümanlar kullanılarak bu metrikler hesaplanır.
+                    """)
+                    
+                    st.markdown("#### 1. Doğruluk (Accuracy)")
+                    st.markdown("Sistemin verdiği tüm kararların yüzde kaçının doğru olduğunu gösterir.")
+                    st.latex(r"Accuracy = \frac{TP + TN}{TP + TN + FP + FN}")
+                    
+                    st.markdown("#### 2. Kesinlik (Precision)")
+                    st.markdown("Sistemin işaretlediği hataların ne kadarının **gerçekten** hata olduğunu gösterir.")
+                    st.latex(r"Precision = \frac{TP}{TP + FP}")
+                    
+                    st.markdown("#### 3. Duyarlılık (Recall)")
+                    st.markdown("Gerçekte var olan hataların ne kadarını sistemin **yakalayabildiğini** gösterir.")
+                    st.latex(r"Recall = \frac{TP}{TP + FN}")
+                    
+                    st.markdown("#### 4. F1 Skoru")
+                    st.markdown("Kesinlik ve Duyarlılığın dengeli (harmonik) ortalamasıdır. Sistemin genel güvenilirliğini ifade eder.")
+                    st.latex(r"F1 = 2 \times \frac{Precision \times Recall}{Precision + Recall}")
         
         except Exception as e:
             st.error(f"❌ Hata: {e}")
