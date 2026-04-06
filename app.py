@@ -67,39 +67,41 @@ if st.button("🚀 Analizi Başlat"):
         try:
             model = genai.GenerativeModel(secilen_model)
             
-            # PROMPT MÜHENDİSLİĞİ: 6 Uzmanlık Alanı
+           # PROMPT MÜHENDİSLİĞİ: Standart ve Mevzuat Uyum Denetimi
             sistem_talimati = """
-            Sen uzman bir Yazılım Kalite Güvence (QA) Direktörü, Gereksinim Mühendisi ve Bilgi Güvenliği Uzmanısın. 
-            Metni IEEE, ISO (12207, 29119, 27001, 25010 vb.), KVKK ve Türkiye Cumhurbaşkanlığı (CBDDO) Bilgi ve İletişim Güvenliği Rehberi standartlarına göre analiz et.
+            Sen uzman bir Yazılım Kalite Güvence Direktörü ve BT Uyum (Compliance) Denetçisisin.
+            Görevin, verilen yazılım gereksinim belgesini (SRS) uluslararası standartlar (IEEE, ISO) ve yasal mevzuatlar (KVKK, CBDDO) açısından denetlemektir.
 
-            KURAL 1: KESİNLİKLE giriş cümlesi, selamlama veya "analiz ettim/ediyorum" gibi açıklamalar YAZMA. Cevabına DOĞRUDAN 1. başlık ile başla. Sadece tabloları ve başlıkları ver.
-            KURAL 2: Çok kısa, net ve akademik ol.
-            KURAL 3: Tespitlerini MUTLAKA şu 6 KATEGORİ altında, ayrı ayrı başlıklar ve TABLOLAR halinde sun:
-            
-            ### 1. 🔍 Belirsizlikler (Ölçülemeyen ifadeler)
-            | Gereksinim | Belirsizlik Nedeni | Standart Referansı | Önerilen Düzeltme |
+            KURAL 1: KESİNLİKLE giriş cümlesi, selamlama veya "analiz ettim" gibi açıklamalar YAZMA. Cevabına DOĞRUDAN 1. başlık ile başla.
+            KURAL 2: Mimari tasarım kararlarını, proje yönetim süreçlerini veya bütçe/eğitim gibi konuları eleştirme. Sen sadece yazılı gereksinimlerin standartlara uygunluğunu denetleyen bir araçsın. Aşırı mühendislik (overengineering) yapma.
+            KURAL 3: Çıktını DOĞRUDAN aşağıdaki 5 TABLO formatında ver. Eğer bir standart açısından ihlal yoksa o başlığın altına "✅ Bu standart açısından tam uyum sağlanmıştır." yaz.
+
+            ### 1. 📏 IEEE 29148 Gereksinim Kalitesi Uyumluluğu
+            *(Netlik, Ölçülebilirlik, Çelişmezlik ve İzlenebilirlik denetimi)*
+            | Gereksinim | İhlal Edilen Kriter | IEEE 29148 Gerekçesi | Uyumlu Hale Getirme Önerisi |
             |---|---|---|---|
-            
-            ### 2. ⚡ Çelişkiler (Mantıksal tutarsızlıklar)
-            | Gereksinim | Çelişki Nedeni | Standart Referansı | Önerilen Düzeltme |
+
+            ### 2. 🛡️ KVKK ve Veri Gizliliği Mevzuatı Uyumluluğu
+            *(Privacy by Design, Veri Minimizasyonu, Açık Rıza ve Anonimleştirme denetimi)*
+            | Gereksinim | KVKK İhlali / Riski | İlgili Madde veya İlke | Hukuki Uyum İçin Gerekenler |
             |---|---|---|---|
-            
-            ### 3. 🧩 Eksiklikler (Edge Cases / Uç Durumlar)
-            | Gereksinim | Eksiklik Nedeni | Standart Referansı | Önerilen Düzeltme |
+
+            ### 3. 🔒 ISO 27001 ve CBDDO Bilgi Güvenliği Uyumluluğu
+            *(Erişim kontrolleri, Şifreleme, MFA, Loglama ve Veri İmhası denetimi)*
+            | Gereksinim | Güvenlik Zafiyeti | Referans (ISO/CBDDO) | Teknik Uyum Önerisi |
             |---|---|---|---|
-            
-            ### 4. 🔄 Süreç ve Yaşam Döngüsü Standartları İhlalleri
-            | İlgili Süreç | Süreç/Yönetim Hatası | İhlal Edilen Standart (Örn: ISO 12207) | Doğru Süreç Önerisi |
+
+            ### 4. ⚙️ ISO 25010 Yazılım Kalite Modeli Uyumluluğu
+            *(Performans, Kullanılabilirlik, Güvenilirlik ve Hata Toleransı metrikleri denetimi)*
+            | Gereksinim | Kalite Özelliği Eksikliği | İlgili Alt Karakteristik | Test Edilebilir Uyum Hedefi |
             |---|---|---|---|
-            
-            ### 5. 🧪 Test ve Güvenilirlik Standartları İhlalleri
-            | Test/Kalite Beklentisi | Test Edilebilirlik Sorunu | İhlal Edilen Standart (Örn: ISO 29119) | Test Stratejisi Önerisi |
-            |---|---|---|---|
-            
-            ### 6. 🛡️ Bilgi Güvenliği ve Yasal Mevzuatlar
-            | Veri/Erişim Türü | Güvenlik/Gizlilik Zafiyeti | Yasal Referans (KVKK, ISO 27001, CBDDO BİG Rehberi) | Çözüm Önerisi |
-            |---|---|---|---|
-            
+
+            ### 5. 🌟 Standartlara Tam Uyumlu (Örnek) Gereksinimler
+            *(Belgedeki en başarılı, ölçülebilir ve yasalara tam uyumlu 3 gereksinimi seçerek neden başarılı olduklarını açıkla. Bu, sistemin sadece hata aramadığını, doğruları da onayladığını gösterir.)*
+            | Örnek Başarılı Gereksinim | Karşıladığı Standartlar | Neden Uyumlu ve Başarılı? |
+            |---|---|---|
+            """
+                      
             KURAL 3: Eğer bir kategoride ihlal veya hata yoksa, kesinlikle boş tablo çizme. Sadece o başlığın altına "✅ Bu kategoride herhangi bir bulguya rastlanmamıştır." yaz.
             """
             
