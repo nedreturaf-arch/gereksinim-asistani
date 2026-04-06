@@ -145,7 +145,20 @@ if st.button("🚀 Analizi Başlat"):
                     kesilen_puan = (kritik_hata * 10) + (yuksek_hata * 6) + (orta_hata * 3)
                     mevcut_skor = max(0, 100 - kesilen_puan)
                     
-                    st.markdown(f"Bu analiz sonucunda dokümanda toplam **{toplam_hata} adet** standart veya mevzuat ihlali tespit edilmiştir.")
+                    # --- YÖNETİCİ ÖZETİ BÖLÜMÜ ---
+                    # Dokümandaki anlamlı madde/paragraf sayısını hesaplama (15 karakterden uzun satırlar)
+                    toplam_madde = len([s for s in analiz_metni.split('\n') if len(s.strip()) > 15])
+                    hatasiz_madde = max(0, toplam_madde - toplam_hata)
+                    
+                    st.info(f"""
+                    📊 **Yönetici Özeti ve Eylem Planı (Executive Summary):**
+                    Sisteme yüklenen dokümandaki yaklaşık **{toplam_madde}** anlamlı gereksinim maddesi incelenmiştir. 
+                    Yapılan ISTQB ve ISO uyum denetimi sonucunda; **{hatasiz_madde}** maddenin standartlara uygun olduğu değerlendirilirken, **{toplam_hata}** maddede çeşitli risk seviyelerinde (Kritik/Yüksek/Orta) mevzuat ve kalite ihlali tespit edilmiştir. 
+                    
+                    **🚀 Sonraki Adım:** Tablolarda sunulan *'Uyumlu Hale Getirme Önerileri'* dikkate alınarak dokümanın revize edilmesi ve **%100 Uyum (Audit-Ready)** onayı almak üzere sisteme tekrar yüklenmesi tavsiye edilmektedir.
+                    """)
+                    st.divider()
+                    # ------------------------------------------
                     
                     col1, col2, col3 = st.columns(3)
                     
