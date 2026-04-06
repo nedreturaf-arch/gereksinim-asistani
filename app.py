@@ -2,7 +2,6 @@ import streamlit as st
 import google.generativeai as genai
 from docx import Document
 import PyPDF2
-import io
 
 # 1. SAYFA AYARLARI
 st.set_page_config(page_title="Gereksinim Analiz Asistanı v3.0", layout="wide")
@@ -67,7 +66,7 @@ if st.button("🚀 Analizi Başlat"):
         try:
             model = genai.GenerativeModel(secilen_model)
             
-           # PROMPT MÜHENDİSLİĞİ: Standart ve Mevzuat Uyum Denetimi
+            # PROMPT MÜHENDİSLİĞİ: Standart ve Mevzuat Uyum Denetimi
             sistem_talimati = """
             Sen uzman bir Yazılım Kalite Güvence Direktörü ve BT Uyum (Compliance) Denetçisisin.
             Görevin, verilen yazılım gereksinim belgesini (SRS) uluslararası standartlar (IEEE, ISO) ve yasal mevzuatlar (KVKK, CBDDO) açısından denetlemektir.
@@ -101,14 +100,11 @@ if st.button("🚀 Analizi Başlat"):
             | Örnek Başarılı Gereksinim | Karşıladığı Standartlar | Neden Uyumlu ve Başarılı? |
             |---|---|---|
             """
-                      
-            KURAL 3: Eğer bir kategoride ihlal veya hata yoksa, kesinlikle boş tablo çizme. Sadece o başlığın altına "✅ Bu kategoride herhangi bir bulguya rastlanmamıştır." yaz.
-            """
             
-            with st.spinner("Analiz ediliyor..."):
+            with st.spinner("Mevzuat ve standartlara göre denetleniyor..."):
                 cevap = model.generate_content(f"{sistem_talimati}\n\nAnaliz edilecek metin:\n{analiz_metni}")
             
-            st.success("✅ Kapsamlı Analiz Tamamlanmıştır!")
+            st.success("✅ Kapsamlı Uyumluluk Analizi Tamamlanmıştır!")
             st.markdown(cevap.text)
             
             # 5. METRİKLER (KARŞILAŞTIRMALI ANALİZ VE MATEMATİKSEL ALTYAPI)
@@ -164,7 +160,6 @@ if st.button("🚀 Analizi Başlat"):
                     st.markdown("#### 4. F1 Skoru")
                     st.markdown("Kesinlik ve Duyarlılığın dengeli (harmonik) ortalamasıdır. Sistemin genel güvenilirliğini ifade eder.")
                     st.latex(r"F1 = 2 \times \frac{Precision \times Recall}{Precision + Recall}")
-                
-     
+        
         except Exception as e:
             st.error(f"❌ Hata: {e}")
