@@ -79,6 +79,9 @@ if st.button("🚀 Analizi Başlat"):
             - Tablo 2 ve 3 (KVKK, ISO 27001) hataları için: 🔴 [KRİTİK RİSK] 
             - Tablo 4 (ISO 25010) hataları için: 🟠 [YÜKSEK RİSK] 
             - Tablo 5 (Başarılı Örnekler) için: 🟢 [KUSURSUZ] 
+            
+            KURAL 5 (ÇOK KRİTİK): HALÜSİNASYON VE AŞIRI DENETİM ÖNLEME: 
+            Sırf tabloları doldurmak için "aşırı teknik detay (örn: sunucu zaman aşımı süresi, veritabanı şifreleme algoritmasının bit uzunluğu)" uydurup bunları İHLAL gibi gösterme. Bir gereksinim, temel ISO/KVKK mantığını ve kuralını karşılıyorsa onu DOĞRU kabul et. Ufak geliştirme tavsiyelerini "Güvenlik Zafiyeti" veya "Hata" gibi raporlama. Metin zaten yüksek kaliteliyse bol bol "✅ Bu standart açısından tam uyum sağlanmıştır." ifadesini kullanmaktan çekinme.
 
             ### 1. 📏 IEEE 29148 Gereksinim Kalitesi Uyumluluğu
             *(Netlik, Ölçülebilirlik, Çelişmezlik ve İzlenebilirlik denetimi)*
