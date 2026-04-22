@@ -31,7 +31,6 @@ Bu sistem, gereksinim metinlerini aşağıdaki uluslararası standartlar ve yere
 * **ISO/IEC 25010:** Yazılım Ürün Kalitesi ve Sistem Kalite Modelleri (Sistem Verimliliği)
 * **ISO/IEC 27001:** Bilgi Güvenliği Yönetim Sistemi Gereksinimleri
 * **KVKK:** 6698 Sayılı Kişisel Verilerin Korunması Kanunu
-* **CBDDO BİG:** T.C. Cumhurbaşkanlığı Dijital Dönüşüm Ofisi Bilgi ve İletişim Güvenliği Rehberi
 """)
 st.divider()
 
@@ -84,7 +83,7 @@ if st.button("🚀 Analizi Başlat"):
             | Gereksinimdeki İfade | KVKK Riski | Mevzuat Maddesi ve Çelişme Nedeni | Hukuki Uyum Şartı |
             |---|---|---|---|
 
-            ### 3. 🔒 ISO 27001 ve CBDDO Bilgi Güvenliği Uyumluluğu
+            ### 3. 🔒 ISO 27001 Bilgi Güvenliği Uyumluluğu
             | Gereksinimdeki İfade | Güvenlik Zafiyeti | Referans Madde ve Teknik Gerekçe | Teknik Önlem |
             |---|---|---|---|
 
