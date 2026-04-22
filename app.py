@@ -4,7 +4,7 @@ from docx import Document
 import PyPDF2
 
 # --- 1. SAYFA VE ARAYÜZ YAPILANDIRMASI ---
-st.set_page_config(page_title="Gereksinim Analiz Asistanı v3.5", layout="wide")
+st.set_page_config(page_title="Gereksinim Analiz Asistanı v3.6", layout="wide")
 
 # --- 2. GÜVENLİK VE API YÖNETİMİ (SOL MENÜ) ---
 with st.sidebar:
@@ -31,6 +31,7 @@ Bu sistem, gereksinim metinlerini aşağıdaki uluslararası standartlar ve yere
 * **ISO/IEC 25010:** Yazılım Ürün Kalitesi ve Sistem Kalite Modelleri (Sistem Verimliliği)
 * **ISO/IEC 27001:** Bilgi Güvenliği Yönetim Sistemi Gereksinimleri
 * **KVKK:** 6698 Sayılı Kişisel Verilerin Korunması Kanunu
+* **CBDDO BİG:** T.C. Cumhurbaşkanlığı Dijital Dönüşüm Ofisi Bilgi ve İletişim Güvenliği Rehberi
 """)
 st.divider()
 
@@ -65,7 +66,7 @@ if st.button("🚀 Analizi Başlat"):
         try:
             model = genai.GenerativeModel(secilen_model)
             
-            # --- PROMPT MÜHENDİSLİĞİ (İZLENEBİLİRLİK ODAKLI) ---
+            # --- PROMPT MÜHENDİSLİĞİ (GÜNCELLENMİŞ KURAL 5) ---
             sistem_talimati = """
             Sen uzman bir Yazılım Kalite Direktörü ve BT Uyum Denetçisisin.
             Gereksinimleri analiz ederken 'İzlenebilirlik' (Traceability) prensibini uygula.
@@ -74,6 +75,7 @@ if st.button("🚀 Analizi Başlat"):
             KURAL 2: Her ihlal için gereksinim belgesindeki 'İLGİLİ İFADEYİ' alıntıla ve hangi 'STANDART MADDESİ' ile neden çeliştiğini açıkla.
             KURAL 3: İhlal yoksa "✅ Tam uyum sağlanmıştır" yaz.
             KURAL 4: Risk İkonları: IEEE(🟡), KVKK/ISO27001(🔴), ISO25010(🟠), Başarılı(🟢).
+            KURAL 5 (ÖNEMLİ): Tablo 5 (Başarılı Örnekler) kısmına metindeki tüm maddeler arasından en az 5, en fazla 10 adet en iyi pratik (best practice) örneğini KESİNLİKLE ekle. Özet geçme.
 
             ### 1. 📏 IEEE 29148 Gereksinim Kalitesi Uyumluluğu
             | Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı ve Analiz | Uyum Önerisi |
@@ -83,7 +85,7 @@ if st.button("🚀 Analizi Başlat"):
             | Gereksinimdeki İfade | KVKK Riski | Mevzuat Maddesi ve Çelişme Nedeni | Hukuki Uyum Şartı |
             |---|---|---|---|
 
-            ### 3. 🔒 ISO 27001 Bilgi Güvenliği Uyumluluğu
+            ### 3. 🔒 ISO 27001 ve CBDDO Bilgi Güvenliği Uyumluluğu
             | Gereksinimdeki İfade | Güvenlik Zafiyeti | Referans Madde ve Teknik Gerekçe | Teknik Önlem |
             |---|---|---|---|
 
@@ -120,16 +122,18 @@ if st.button("🚀 Analizi Başlat"):
                         elif aktif_tablo == 4: yuksek_hata += 1
                         elif aktif_tablo == 1: orta_hata += 1
                 
-                # Matematiksel risk ağırlıklandırma (Pozitif Skorlama)
+                # Matematiksel risk ağırlıklandırma (100 üzerinden Pozitif Skorlama)
                 toplam_ceza = (kritik_hata * 10) + (yuksek_hata * 6) + (orta_hata * 3)
                 mevcut_skor = max(0, 100 - toplam_ceza)
                 
+                # Toplam madde sayısını dinamik hesapla (boş olmayan anlamlı satırlar)
                 toplam_madde = len([s for s in analiz_metni.split('\n') if len(s.strip()) > 15])
                 toplam_hata = kritik_hata + yuksek_hata + orta_hata
                 hatasiz_madde = max(0, toplam_madde - toplam_hata)
                 
                 st.info(f"""
-                📊 **Yönetici Özeti:** İnceleme sonucunda **{toplam_madde}** madde taranmış, **{hatasiz_madde}** madde güvenli bulunurken **{toplam_hata}** madde riskli olarak işaretlenmiştir.
+                📊 **Yönetici Özeti:** İnceleme sonucunda döküman içerisindeki **{toplam_madde}** madde taranmıştır. 
+                Sistem; **{hatasiz_madde}** maddeyi standartlara tam uyumlu bulurken, **{toplam_hata}** maddede gelişim alanı tespit etmiştir.
                 """)
                 
                 col1, col2, col3 = st.columns(3)
@@ -138,10 +142,10 @@ if st.button("🚀 Analizi Başlat"):
                 with col2:
                     st.write(f"**🔴 {kritik_hata}** Kritik | **🟠 {yuksek_hata}** Yüksek | **🟡 {orta_hata}** Orta")
                 with col3:
-                    st.metric("Gelişim Potansiyeli", "% 100", f"+{toplam_ceza} Puan")
+                    st.metric("Hedeflenen Durum", "% 100", f"+{toplam_ceza} Gelişim")
                 
                 st.divider()
-                st.caption("💡 **Analiz Notu:** Puanlama 100 baz puan üzerinden yapılır. Kritik ihlaller -10, Yüksek -6, Orta -3 puan olarak hesaplanır.")
+                st.caption("💡 **Mühendislik Notu:** Bu rapor ISTQB Risk Temelli Analiz prensiplerine göre oluşturulmuştur. Başarılı maddelerin tamamı döküman boyutuna göre örneklenerek sunulmaktadır.")
 
         except Exception as e:
             st.error(f"❌ Analiz Hatası: {e}")
