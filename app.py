@@ -106,33 +106,38 @@ if st.button("🚀 Analizi Başlat"):
             # --- 6. GÜNCELLENMİŞ POZİTİF SKORLAMA ALGORİTMASI ---
             with st.expander("📊 Doküman Uyum Skoru (ISTQB Risk Temelli Analiz)", expanded=True):
                 satirlar = cevap.text.split('\n')
-                kritik_hata, yuksek_hata, orta_hata = 0, 0, 0
+                
+                kritik_hata, yuksek_hata, orta_hata, basarili_madde = 0, 0, 0, 0
                 aktif_tablo = 0
                 
                 for satir in satirlar:
-                    if "IEEE 29148" in satir: aktif_tablo = 1
-                    elif "KVKK" in satir: aktif_tablo = 2
-                    elif "ISO 27001" in satir: aktif_tablo = 3
-                    elif "ISO 25010" in satir: aktif_tablo = 4
-                    elif "Standartlara Tam Uyumlu" in satir: aktif_tablo = 5
+                    # Başlıkları daha esnek yakala
+                    if "1." in satir and "IEEE" in satir: aktif_tablo = 1
+                    elif "2." in satir and "KVKK" in satir: aktif_tablo = 2
+                    elif "3." in satir and "ISO 27001" in satir: aktif_tablo = 3
+                    elif "4." in satir and "ISO 25010" in satir: aktif_tablo = 4
+                    elif "5." in satir and "Uyumlu" in satir: aktif_tablo = 5
                     
-                    if "|" in satir and "---" not in satir and "İfade" not in satir and "✅" not in satir and aktif_tablo != 5:
+                    # Sadece gerçek tablo veri satırlarını yakala
+                    if satir.count('|') >= 3 and "---" not in satir and "Gereksinimdeki İfade" not in satir and "Başarılı Gereksinim" not in satir:
                         if aktif_tablo in [2, 3]: kritik_hata += 1
                         elif aktif_tablo == 4: yuksek_hata += 1
                         elif aktif_tablo == 1: orta_hata += 1
-                
-                # Matematiksel risk ağırlıklandırma (100 üzerinden Pozitif Skorlama)
+                        elif aktif_tablo == 5: basarili_madde += 1
+
+                # Matematiksel risk ağırlıklandırma
                 toplam_ceza = (kritik_hata * 10) + (yuksek_hata * 6) + (orta_hata * 3)
                 mevcut_skor = max(0, 100 - toplam_ceza)
                 
-                # Toplam madde sayısını dinamik hesapla (boş olmayan anlamlı satırlar)
-                toplam_madde = len([s for s in analiz_metni.split('\n') if len(s.strip()) > 15])
+                # Dinamik ve kesin hesaplama (Yapay zeka çıktısından hesaplıyoruz)
                 toplam_hata = kritik_hata + yuksek_hata + orta_hata
-                hatasiz_madde = max(0, toplam_madde - toplam_hata)
+                toplam_madde = toplam_hata + basarili_madde 
                 
+                if toplam_madde == 0: toplam_madde = 1 # Sıfıra bölme / boş metin hatasını önlemek için
+
                 st.info(f"""
-                📊 **Yönetici Özeti:** İnceleme sonucunda döküman içerisindeki **{toplam_madde}** madde taranmıştır. 
-                Sistem; **{hatasiz_madde}** maddeyi standartlara tam uyumlu bulurken, **{toplam_hata}** maddede gelişim alanı tespit etmiştir.
+                📊 **Yönetici Özeti:** İnceleme sonucunda döküman içerisinden toplam **{toplam_madde}** kritik madde/ifade tabloya alınmıştır. 
+                Sistem; **{basarili_madde}** maddeyi standartlara tam uyumlu bulurken, **{toplam_hata}** maddede gelişim alanı tespit etmiştir.
                 """)
                 
                 col1, col2, col3 = st.columns(3)
@@ -141,7 +146,7 @@ if st.button("🚀 Analizi Başlat"):
                 with col2:
                     st.write(f"**🔴 {kritik_hata}** Kritik | **🟠 {yuksek_hata}** Yüksek | **🟡 {orta_hata}** Orta")
                 with col3:
-                    st.metric("Hedeflenen Durum", "% 100", f"+{toplam_ceza} Gelişim")
+                    st.metric("Tam Uyumlu Madde", f"{basarili_madde} Adet", "Standartlara Uygun")
                 
                 st.divider()
                 st.caption("💡 **Mühendislik Notu:** Bu rapor ISTQB Risk Temelli Analiz prensiplerine göre oluşturulmuştur. Başarılı maddelerin tamamı döküman boyutuna göre örneklenerek sunulmaktadır.")
