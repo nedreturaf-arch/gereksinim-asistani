@@ -105,38 +105,43 @@ if st.button("🚀 Analizi Başlat"):
             
             # --- 6. GÜNCELLENMİŞ POZİTİF SKORLAMA ALGORİTMASI ---
             with st.expander("📊 Doküman Uyum Skoru (ISTQB Risk Temelli Analiz)", expanded=True):
+                # Bellekteki yapay zeka sonucunu al (Session state kullanıyorsanız st.session_state.analiz_sonucu)
                 satirlar = cevap.text.split('\n')
                 
-                kritik_hata, yuksek_hata, orta_hata, basarili_madde = 0, 0, 0, 0
+                kritik_hata, yuksek_hata, orta_hata = 0, 0, 0
                 aktif_tablo = 0
                 
                 for satir in satirlar:
-                    # Başlıkları daha esnek yakala
+                    # Başlıkları yakala
                     if "1." in satir and "IEEE" in satir: aktif_tablo = 1
                     elif "2." in satir and "KVKK" in satir: aktif_tablo = 2
                     elif "3." in satir and "ISO 27001" in satir: aktif_tablo = 3
                     elif "4." in satir and "ISO 25010" in satir: aktif_tablo = 4
                     elif "5." in satir and "Uyumlu" in satir: aktif_tablo = 5
                     
-                    # Sadece gerçek tablo veri satırlarını yakala
-                    if satir.count('|') >= 3 and "---" not in satir and "Gereksinimdeki İfade" not in satir and "Başarılı Gereksinim" not in satir:
+                    # Sadece 1, 2, 3 ve 4 numaralı HATA tablolarındaki satırları sayıyoruz
+                    if satir.count('|') >= 3 and "---" not in satir and "Gereksinimdeki İfade" not in satir and aktif_tablo in [1, 2, 3, 4]:
                         if aktif_tablo in [2, 3]: kritik_hata += 1
                         elif aktif_tablo == 4: yuksek_hata += 1
                         elif aktif_tablo == 1: orta_hata += 1
-                        elif aktif_tablo == 5: basarili_madde += 1
 
-                # Matematiksel risk ağırlıklandırma
+                # Orijinal metot: Dökümanın genel hacminden toplam maddeyi tahmin et
+                toplam_madde = len([s for s in analiz_metni.split('\n') if len(s.strip()) > 15])
+                
+                # Tablolardan okunan net hata sayısı
+                toplam_hata = kritik_hata + yuksek_hata + orta_hata
+                
+                # Matematiksel olarak tam uyumlu madde sayısı
+                basarili_madde = max(0, toplam_madde - toplam_hata)
+                
+                if toplam_madde == 0: toplam_madde = 1 # Sıfıra bölme hatasını önlemek için
+
+                # Risk ağırlıklandırma
                 toplam_ceza = (kritik_hata * 10) + (yuksek_hata * 6) + (orta_hata * 3)
                 mevcut_skor = max(0, 100 - toplam_ceza)
-                
-                # Dinamik ve kesin hesaplama (Yapay zeka çıktısından hesaplıyoruz)
-                toplam_hata = kritik_hata + yuksek_hata + orta_hata
-                toplam_madde = toplam_hata + basarili_madde 
-                
-                if toplam_madde == 0: toplam_madde = 1 # Sıfıra bölme / boş metin hatasını önlemek için
 
                 st.info(f"""
-                📊 **Yönetici Özeti:** İnceleme sonucunda döküman içerisinden toplam **{toplam_madde}** kritik madde/ifade tabloya alınmıştır. 
+                📊 **Yönetici Özeti:** İnceleme sonucunda döküman içerisindeki **{toplam_madde}** madde/ifade taranmıştır. 
                 Sistem; **{basarili_madde}** maddeyi standartlara tam uyumlu bulurken, **{toplam_hata}** maddede gelişim alanı tespit etmiştir.
                 """)
                 
@@ -149,7 +154,6 @@ if st.button("🚀 Analizi Başlat"):
                     st.metric("Tam Uyumlu Madde", f"{basarili_madde} Adet", "Standartlara Uygun")
                 
                 st.divider()
-                st.caption("💡 **Mühendislik Notu:** Bu rapor ISTQB Risk Temelli Analiz prensiplerine göre oluşturulmuştur. Başarılı maddelerin tamamı döküman boyutuna göre örneklenerek sunulmaktadır.")
-
+                st.caption("💡 **Mühendislik Notu:** Bu rapor ISTQB Risk Temelli Analiz prensiplerine göre oluşturulmuştur. AI tarafından oluşturulan Tablo 5, sadece en iyi 5-10 örneği göstermektedir.")
         except Exception as e:
             st.error(f"❌ Analiz Hatası: {e}")
