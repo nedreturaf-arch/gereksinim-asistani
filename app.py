@@ -179,7 +179,7 @@ if st.button("🚀 Analizi Başlat"):
                 st.success("✅ Analiz Tamamlandı!")
                 st.markdown(cevap.text)
 
-                # Skorlama
+               # Skorlama
                 with st.expander("📊 Doküman Uyum Skoru", expanded=True):
                     skor = skor_hesapla(cevap.text, analiz_metni)
                     st.info(f"Taranan Madde: {skor['toplam_madde']} | Uyumlu: {skor['basarili_madde']} | Hatalı: {skor['toplam_hata']}")
@@ -188,6 +188,29 @@ if st.button("🚀 Analizi Başlat"):
                     c1.metric("Uyum Skoru", f"% {skor['mevcut_skor']}", f"-{skor['toplam_ceza']} Risk")
                     c2.write(f"🔴 {skor['kritik_hata']} Kritik\n🟠 {skor['yuksek_hata']} Yüksek\n🟡 {skor['orta_hata']} Orta")
                     c3.metric("Uyumlu Madde", f"{skor['basarili_madde']} Adet")
+
+                    # YENİ EKLENEN MATEMATİKSEL DÖKÜM BÖLÜMÜ
+                    st.divider()
+                    
+                    with st.expander("🧮 Puanlama Nasıl Hesaplanıyor? (Matematiksel Döküm)"):
+                        st.markdown(f"""
+                        **1. Madde ve Hata Tespiti:**
+                        * **Toplam Taranan Madde:** {skor['toplam_madde']}
+                        * **Tespit Edilen Hatalar:** {skor['kritik_hata']} Kritik + {skor['yuksek_hata']} Yüksek + {skor['orta_hata']} Orta = **{skor['toplam_hata']} Toplam Hata**
+                        * **Başarılı Madde:** {skor['toplam_madde']} (Toplam) - {skor['toplam_hata']} (Hata) = **{skor['basarili_madde']} Adet**
+
+                        **2. Risk (Ceza) Puanı Hesabı:**
+                        *(Ağırlıklar - Kritik: 10, Yüksek: 6, Orta: 3)*
+                        * Kritik Risk Cezası: {skor['kritik_hata']} x 10 = **{skor['kritik_hata'] * 10} Puan**
+                        * Yüksek Risk Cezası: {skor['yuksek_hata']} x 6 = **{skor['yuksek_hata'] * 6} Puan**
+                        * Orta Risk Cezası: {skor['orta_hata']} x 3 = **{skor['orta_hata'] * 3} Puan**
+                        * **Toplam Risk Puanı:** **{skor['toplam_ceza']} Puan**
+
+                        **3. Uyum Yüzdesi (%):**
+                        * **Maksimum Olası Risk:** {skor['toplam_madde']} x 10 = **{skor['toplam_madde'] * 10}**
+                        * **Risk Oranı:** {skor['toplam_ceza']} / {max(1, (skor['toplam_madde'] * 10))} = **{skor['toplam_ceza'] / max(1, (skor['toplam_madde'] * 10)):.4f}**
+                        * **Sonuç:** 100 - (Risk Oranı x 100) = **% {skor['mevcut_skor']}**
+                        """)
             else:
                 st.error("❌ Modelden yanıt alınamadı.")
 
