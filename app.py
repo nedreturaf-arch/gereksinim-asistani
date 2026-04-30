@@ -47,10 +47,19 @@ with st.sidebar:
 # ---------------------------------------------------------
 # 3. ANA EKRAN VE BİLGİLENDİRME
 # ---------------------------------------------------------
+# Uygulamanın ana başlığı.
 st.title("🎯 Gereksinim & Kalite Analiz Asistanı")
 
+# Kullanıcıya sistemin hangi standartlar kapsamında analiz yaptığı açıklanır.
 st.info("""
-**📖 Analiz Kapsamı:** IEEE 29148, ISO/IEC 25010, ISO/IEC 27001 ve KVKK standartları çerçevesinde denetim yapar.
+**📖 Analiz Kapsamı ve Referans Standartlar:**
+
+Bu sistem, gereksinim metinlerini aşağıdaki uluslararası standartlar ve yerel mevzuatlar çerçevesinde denetleyerek, spesifik ifadeleri ilgili standart/prensip ile eşleştirir:
+
+* **IEEE 29148:** Yazılım ve Sistem Mühendisliği — Gereksinim Mühendisliği Standartları
+* **ISO/IEC 25010:** Yazılım Ürün Kalitesi ve Sistem Kalite Modelleri
+* **ISO/IEC 27001:** Bilgi Güvenliği Yönetim Sistemi Gereksinimleri
+* **KVKK:** 6698 Sayılı Kişisel Verilerin Korunması Kanunu
 """)
 
 st.divider()
