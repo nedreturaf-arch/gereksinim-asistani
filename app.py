@@ -155,16 +155,16 @@ if st.button("🚀 Analizi Başlat"):
             Kesinlikle uydurma örnek oluşturma.
 
             ### 1. 📏 IEEE 29148 Uyumluluğu
-            | Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı | Uyum Önerisi |
+            | Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı ve Analiz | Uyum Önerisi |
 
             ### 2. 🛡️ KVKK Uyumluluğu
-            | Gereksinimdeki İfade | KVKK Riski | Mevzuat Karşılığı | Uyum Önerisi |
+            | Gereksinimdeki İfade | KVKK Riski | Mevzuat Çerçevesi ve Çelişme Nedeni | Hukuki Uyum Önerisi |
 
             ### 3. 🔒 ISO 27001 Uyumluluğu
-            | Gereksinimdeki İfade | Güvenlik Riski | Kontrol Alanı | Teknik Önlem |
+            | Gereksinimdeki İfade | Güvenlik Riski | Refesrans Madde ve Teknik Gerekçe | Teknik Önlem |
 
             ### 4. ⚙️ ISO 25010 Uyumluluğu
-            | Gereksinimdeki İfade | Kalite Eksikliği | Karakteristik | İyileştirme |
+            | Gereksinimdeki İfade | Kalite Eksikliği | Karakteristik ve Analiz | Kalite Hedefi |
 
             ### 5. 🌟 Standartlara Tam Uyumlu Gereksinimler
             | Başarılı Gereksinim | Karşıladığı Standartlar | Uyum Gerekçesi |
