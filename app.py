@@ -4,93 +4,167 @@ from docx import Document
 import PyPDF2
 
 # ---------------------------------------------------------
-# 1. AYARLAR VE API YAPILANDIRMASI
+# 1. SAYFA YAPILANDIRMASI
 # ---------------------------------------------------------
-st.set_page_config(page_title="Gereksinim Analiz Asistanı v4.1", layout="wide")
+st.set_page_config(
+    page_title="Gereksinim Analiz Asistanı v4.2",
+    layout="wide"
+)
 
-# Sidebar
+# ---------------------------------------------------------
+# 2. GÜVENLİK VE SIDEBAR
+# ---------------------------------------------------------
 with st.sidebar:
     st.header("⚙️ Ayarlar")
     api_key = st.text_input("Gemini API Anahtarınızı girin:", type="password")
+    st.divider()
+    
     secilen_model = None
     if api_key:
         try:
             genai.configure(api_key=api_key.strip())
-            modeller = [m.name.replace("models/", "") for m in genai.list_models() if "generateContent" in m.supported_generation_methods]
-            if modeller: secilen_model = st.selectbox("🤖 Model Seçin:", modeller)
-        except: st.error("Bağlantı kurulamadı.")
+            modeller = [m.name.replace("models/", "") for m in genai.list_models() 
+                       if "generateContent" in m.supported_generation_methods]
+            if modeller:
+                secilen_model = st.selectbox("🤖 Model Seçin:", modeller)
+            else:
+                st.warning("⚠️ Kullanılabilir model bulunamadı.")
+        except Exception as e:
+            st.error("⚠️ API Hatası.")
 
 # ---------------------------------------------------------
-# 2. SKORLAMA VE ANALİZ FONKSİYONLARI
+# 3. FONKSİYONLAR (METİN OKUMA & AKILLI SKORLAMA)
 # ---------------------------------------------------------
+def dosya_oku(dosya):
+    if dosya is None: return ""
+    try:
+        dosya_adi = dosya.name.lower()
+        if dosya_adi.endswith(".docx"):
+            doc = Document(dosya)
+            return "\n".join([p.text.strip() for p in doc.paragraphs if p.text.strip()])
+        elif dosya_adi.endswith(".pdf"):
+            pdf_reader = PyPDF2.PdfReader(dosya)
+            metin = ""
+            for sayfa in pdf_reader.pages:
+                sayfa_metni = sayfa.extract_text()
+                if sayfa_metni: metin += sayfa_metni + "\n"
+            return metin.strip()
+        return ""
+    except Exception as e:
+        st.error(f"Dosya okuma hatası: {e}")
+        return ""
 
-def skor_hesapla(ai_cevabi, orijinal_metin):
+def skor_hesapla(ai_cevabi, analiz_metni):
     satirlar = ai_cevabi.split("\n")
-    # Set kullanarak aynı ifadenin birden fazla kez sayılmasını engelliyoruz
-    hatali_ifadeler = set()
     kritik, yuksek, orta = 0, 0, 0
     aktif_tablo = 0
+    
+    # Gerçekten analiz edilen benzersiz maddeleri takip etmek için
+    analiz_edilen_ifadeler = set()
 
     for satir in satirlar:
-        s = satir.strip()
-        if "IEEE 29148" in s: aktif_tablo = 1
-        elif "KVKK" in s or "ISO 27001" in s: aktif_tablo = 2
-        elif "ISO 25010" in s: aktif_tablo = 3
-        
-        if s.startswith("|") and "|" in s[1:] and "---" not in s:
-            if any(x in s for x in ["Gereksinim", "✅", "Başarılı"]): continue
-            
-            # Satırdaki ilk sütunu (ifadeyi) alıp kaydediyoruz
-            ifade = s.split("|")[1].strip()
-            hatali_ifadeler.add(ifade)
-            
-            if aktif_tablo == 2: kritik += 1
-            elif aktif_tablo == 3: yuksek += 1
-            elif aktif_tablo == 1: orta += 1
+        temiz_satir = satir.strip()
+        if "IEEE 29148" in temiz_satir: aktif_tablo = 1
+        elif "KVKK" in temiz_satir or "ISO 27001" in temiz_satir: aktif_tablo = 2
+        elif "ISO 25010" in temiz_satir: aktif_tablo = 3
 
-    # Orijinal metindeki gerçek madde sayısı
-    toplam_madde = len([m for m in orijinal_metin.split("\n") if len(m.strip()) > 10]) or 1
+        if temiz_satir.startswith("|") and "---" not in temiz_satir:
+            # Başlıkları ve boş uyum satırlarını eliyoruz
+            if any(x in temiz_satir for x in ["Gereksinim", "✅", "Başarılı", "Standart"]):
+                continue
+            
+            # Tablodaki ilk hücreyi (ifadeyi) alıyoruz
+            hucreler = temiz_satir.split("|")
+            if len(hucreler) > 1:
+                ifade = hucreler[1].strip()
+                analiz_edilen_ifadeler.add(ifade)
+
+                if aktif_tablo == 2: kritik += 1
+                elif aktif_tablo == 3: yuksek += 1
+                elif aktif_tablo == 1: orta += 1
+
+    # Kullanıcının girdiği toplam madde sayısını daha hassas hesaplıyoruz
+    toplam_madde = len([s for s in analiz_metni.split("\n") if len(s.strip()) > 15]) or 1
     
-    # Skorlama (Cezaların toplam maddeye oranı)
-    ceza = (kritik * 10) + (yuksek * 6) + (orta * 3)
-    max_risk = toplam_madde * 10
-    skor = max(0, round(100 * (1 - (ceza / max_risk))))
+    # Hata sayısı, toplam madde sayısından fazla görünmemeli (Mapping düzeltmesi)
+    toplam_hata = min(len(analiz_edilen_ifadeler), toplam_madde)
+    basarili_madde = max(0, toplam_madde - toplam_hata)
+    
+    toplam_ceza = (kritik * 10) + (yuksek * 6) + (orta * 3)
+    maksimum_risk = toplam_madde * 10
+    mevcut_skor = max(0, round(100 * (1 - (toplam_ceza / maksimum_risk))))
 
-    return {"kritik": kritik, "yuksek": yuksek, "orta": orta, "toplam_madde": toplam_madde, "skor": skor}
+    return {
+        "kritik": kritik, "yuksek": yuksek, "orta": orta,
+        "toplam_hata": toplam_hata, "toplam_madde": toplam_madde,
+        "basarili_madde": basarili_madde, "mevcut_skor": mevcut_skor,
+        "toplam_ceza": toplam_ceza
+    }
 
 # ---------------------------------------------------------
-# 3. ANA ARAYÜZ VE PROMPT
+# 4. ANA EKRAN
 # ---------------------------------------------------------
 st.title("🎯 Gereksinim & Kalite Analiz Asistanı")
-metin_alani = st.text_area("Analiz edilecek metni buraya yapıştırın:", height=150)
+st.info("""
+**📖 Analiz Kapsamı:** IEEE 29148, ISO 25010, ISO 27001 ve KVKK standartlarında otomatik denetim.
+""")
+
+st.divider()
+
+col1, col2 = st.columns([1, 1])
+with col1:
+    yuklenen_dosya = st.file_uploader("Dosya seçin (.docx, .pdf)", type=["docx", "pdf"])
+with col2:
+    metin_alani = st.text_area("Veya metni yapıştırın:", height=100)
 
 if st.button("🚀 Analizi Başlat"):
-    if not api_key or not metin_alani.strip():
-        st.warning("Lütfen API anahtarını ve metni girin.")
+    # Veri kaynağı seçimi
+    analiz_metni = dosya_oku(yuklenen_dosya) if yuklenen_dosya else metin_alani
+
+    if not api_key or not analiz_metni.strip() or not secilen_model:
+        st.warning("⚠️ Lütfen gerekli alanları doldurun.")
     else:
-        model = genai.GenerativeModel(secilen_model)
-        
-        # GÜNCELLENMİŞ SİSTEM TALİMATI (KURAL 5 DÜZELTİLDİ)
-        sistem_talimati = """Sen uzman bir denetçisin. 
-        KURAL: Sadece sana verilen metindeki maddeleri analiz et. 
-        KURAL: Kesinlikle dışarıdan örnek uydurma.
-        KURAL: Eğer metinde başarılı örnek yoksa Tablo 5'e 'Analiz edilen metinde standartlara tam uyumlu madde bulunamadı' yaz.
-        
-        ### 1. 📏 IEEE 29148 Uyumluluğu (Sadece metindeki maddeler)
-        ### 2. 🛡️ KVKK / ISO 27001 Uyumluluğu (Sadece metindeki maddeler)
-        ### 3. ⚙️ ISO 25010 Uyumluluğu (Sadece metindeki maddeler)
-        ### 5. 🌟 Standartlara Tam Uyumlu Gereksinimler (Sadece metinde gerçekten varsa)
-        """
-        
-        with st.spinner("Analiz ediliyor..."):
-            response = model.generate_content(f"{sistem_talimati}\n\nAnaliz Edilecek Metin:\n{metin_alani}")
+        try:
+            model = genai.GenerativeModel(secilen_model)
             
-            if response.text:
-                st.markdown(response.text)
-                stats = skor_hesapla(response.text, metin_alani)
+            # GÜNCELLENMİŞ SİSTEM TALİMATI (Hallucination Korumalı)
+            sistem_talimati = """Sen uzman bir Yazılım Kalite Denetçisisin.
+KURAL 1: SADECE sana verilen metindeki maddeleri analiz et. Dışarıdan madde uydurma.
+KURAL 2: Eğer bir madde standartlara uygunsa onu sadece Tablo 5'e ekle.
+KURAL 3: Tablo 5 (Başarılı Örnekler) kısmına metinde olmayan hiçbir şeyi yazma. Eğer başarılı örnek yoksa 'Uyumlu madde bulunamadı' yaz.
+KURAL 4: Tüm çıktıyı Türkçe üret.
+
+### 1. 📏 IEEE 29148 Uyumluluğu
+| Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı | Öneri |
+|---|---|---|---|
+
+### 2. 🛡️ KVKK ve ISO 27001 Uyumluluğu
+| Gereksinimdeki İfade | Risk | Mevzuat/Standart Karşılığı | Öneri |
+|---|---|---|---|
+
+### 4. ⚙️ ISO 25010 Uyumluluğu
+| Gereksinimdeki İfade | Kalite Eksikliği | Karakteristik | İyileştirme |
+|---|---|---|---|
+
+### 5. 🌟 Standartlara Tam Uyumlu Gereksinimler
+| Başarılı Gereksinim | Standartlar | Gerekçe |
+|---|---|---|
+"""
+            with st.spinner("İzlenebilirlik Analizi Yapılıyor..."):
+                cevap = model.generate_content(f"{sistem_talimati}\n\nMETİN:\n{analiz_metni}")
+            
+            if cevap.text:
+                st.markdown(cevap.text)
+                st.divider()
                 
-                with st.expander("📊 Analiz Özet Skoru", expanded=True):
-                    c1, c2, c3 = st.columns(3)
-                    c1.metric("Genel Uyum Skoru", f"%{stats['skor']}")
-                    c2.metric("İncelenen Madde", stats['toplam_madde'])
-                    c3.write(f"🔴 {stats['kritik']} Kritik | 🟠 {stats['yuksek']} Yüksek | 🟡 {stats['orta']} Orta")
+                # SKORLAMA BÖLÜMÜ
+                skor = skor_hesapla(cevap.text, analiz_metni)
+                with st.expander("📊 Doküman Uyum Skoru", expanded=True):
+                    st.info(f"İnceleme sonucunda **{skor['toplam_madde']}** madde taranmıştır.")
+                    m1, m2, m3 = st.columns(3)
+                    m1.metric("Uyum Skoru", f"%{skor['mevcut_skor']}", f"-{skor['toplam_ceza']} Risk", delta_color="inverse")
+                    m2.write(f"🔴 {skor['kritik']} Kritik\n\n🟠 {skor['yuksek']} Yüksek\n\n🟡 {skor['orta']} Orta")
+                    m3.metric("Uyumlu Madde", f"{skor['basarili_madde']} Adet")
+
+        except Exception as e:
+            st.error(f"Analiz Hatası: {e}")
