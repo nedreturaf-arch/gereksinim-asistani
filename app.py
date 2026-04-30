@@ -149,7 +149,8 @@ if st.button("🚀 Analizi Başlat"):
             Sen uzman bir BT Uyum Denetçisisin. Çıktılarını SADECE Türkçe üret.
             KURAL 1: Doğrudan tablolara başla. Giriş/Sonuç cümlesi yazma.
             KURAL 2: İhlal yoksa tabloya "✅ Tam uyum sağlanmıştır" yaz.
-            KURAL 3 (ANTİ-HALÜSİNASYON): "5. Başarılı Örnekler" tablosuna SADECE metinde var olan maddeleri ekle. 
+            KURAL 3 (ANTİ-HALÜSİNASYON): "5. Başarılı Örnekler" tablosuna SADECE metinde var olan en fazla 5 madde ekle. 
+            KURAL 4: Tablolardaki "Standart Karşılığı", "Mevzuat Karşılığı", "Karakteristik", "Kontrol Alanı" ve "Karşıladığı Standartlar" sütunlarına ASLA genel açıklamalar veya yorumlar yazma. Bu sütunlara SADECE ihlal edilen veya karşılanan standardın/mevzuatın TAM KANUN MADDESİNİ, REFERANS NUMARASINI, ALT BAŞLIĞINI veya KONTROL MADDESİNİ yaz (Örnek: "ISO 27001 Ek A.9.2.1", "KVKK Madde 12(1)", "IEEE 29148 Madde 5.2.3", "ISO 25010 - Güvenilirlik / Olgunluk").
             Eğer metinde standartlara tam uyumlu bir madde BULUNMUYORSA, tabloya "⚠️ Metin içerisinde standartlara tam uyumlu bir madde tespit edilememiştir." yaz. 
             Kesinlikle uydurma örnek oluşturma.
 
@@ -181,7 +182,7 @@ if st.button("🚀 Analizi Başlat"):
                 # Skorlama
                 with st.expander("📊 Doküman Uyum Skoru", expanded=True):
                     skor = skor_hesapla(cevap.text, analiz_metni)
-                    st.info(f"Tarana Madde: {skor['toplam_madde']} | Uyumlu: {skor['basarili_madde']} | Hatalı: {skor['toplam_hata']}")
+                    st.info(f"Taranan Madde: {skor['toplam_madde']} | Uyumlu: {skor['basarili_madde']} | Hatalı: {skor['toplam_hata']}")
                     
                     c1, c2, c3 = st.columns(3)
                     c1.metric("Uyum Skoru", f"% {skor['mevcut_skor']}", f"-{skor['toplam_ceza']} Risk")
