@@ -1,4 +1,6 @@
 import streamlit as st
+import markdown
+import pdfkit
 import google.generativeai as genai
 from docx import Document
 import PyPDF2
@@ -178,41 +180,72 @@ if st.button("🚀 Analizi Başlat"):
             if cevap and hasattr(cevap, "text"):
                 st.success("✅ Analiz Tamamlandı!")
                 st.markdown(cevap.text)
-
-               # Skorlama
+                
+                # Skorlama
                 with st.expander("📊 Doküman Uyum Skoru", expanded=True):
                     skor = skor_hesapla(cevap.text, analiz_metni)
-                    st.info(f"Taranan Madde: {skor['toplam_madde']} | Uyumlu: {skor['basarili_madde']} | Hatalı: {skor['toplam_hata']}")
+                    # ... Sizin mevcut skor ve metrik kodlarınız ...
+                    # ... Matematiksel döküm kısmınız vs. ...
+                
+                # --- İŞTE YENİ EKLENECEK PDF KISMI ---
+                st.divider() # Araya ince bir çizgi çeker
+                
+                # PDF Dönüştürme Fonksiyonu (Sadece ihtiyaç olduğunda çalışır)
+                def pdf_olustur(ai_metni, skor_verisi):
+                    html_tablolar = markdown.markdown(ai_metni, extensions=['tables'])
                     
-                    c1, c2, c3 = st.columns(3)
-                    c1.metric("Uyum Skoru", f"% {skor['mevcut_skor']}", f"-{skor['toplam_ceza']} Risk")
-                    c2.write(f"🔴 {skor['kritik_hata']} Kritik\n🟠 {skor['yuksek_hata']} Yüksek\n🟡 {skor['orta_hata']} Orta")
-                    c3.metric("Uyumlu Madde", f"{skor['basarili_madde']} Adet")
+                    html_sablon = f"""
+                    <!DOCTYPE html>
+                    <html lang="tr">
+                    <head>
+                        <meta charset="UTF-8">
+                        <style>
+                            body {{ font-family: 'Arial', sans-serif; padding: 20px; color: #333; }}
+                            h1 {{ color: #2C3E50; border-bottom: 2px solid #2C3E50; padding-bottom: 10px; }}
+                            .skor-kutusu {{ 
+                                background-color: #f8f9fa; padding: 15px; border-left: 5px solid #28a745; 
+                                margin-bottom: 20px; border-radius: 5px;
+                            }}
+                            table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+                            th, td {{ border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 12px; }}
+                            th {{ background-color: #2C3E50; color: white; }}
+                            tr:nth-child(even) {{ background-color: #f2f2f2; }}
+                        </style>
+                    </head>
+                    <body>
+                        <h1>Gereksinim Analiz ve Kalite Raporu</h1>
+                        <div class="skor-kutusu">
+                            <h2>Genel Uyum Skoru: %{skor_verisi['mevcut_skor']}</h2>
+                            <p><strong>Taranan Madde:</strong> {skor_verisi['toplam_madde']} | 
+                               <strong>Uyumlu:</strong> {skor_verisi['basarili_madde']} | 
+                               <strong>Hatalı:</strong> {skor_verisi['toplam_hata']}</p>
+                            <p style="color:red; font-weight:bold;">
+                               (Kritik: {skor_verisi['kritik_hata']}, Yüksek: {skor_verisi['yuksek_hata']}, Orta: {skor_verisi['orta_hata']})
+                            </p>
+                        </div>
+                        <h2>Detaylı Analiz Tabloları</h2>
+                        {html_tablolar}
+                    </body>
+                    </html>
+                    """
+                    # HTML'i PDF bytes verisine çevir
+                    return pdfkit.from_string(html_sablon, False, options={"encoding": "UTF-8"})
 
-                    # YENİ EKLENEN MATEMATİKSEL DÖKÜM BÖLÜMÜ
-                    st.divider()
-                    
-                    with st.expander("🧮 Puanlama Nasıl Hesaplanıyor? (Matematiksel Döküm)"):
-                        st.markdown(f"""
-                        **1. Madde ve Hata Tespiti:**
-                        * **Toplam Taranan Madde:** {skor['toplam_madde']}
-                        * **Tespit Edilen Hatalar:** {skor['kritik_hata']} Kritik + {skor['yuksek_hata']} Yüksek + {skor['orta_hata']} Orta = **{skor['toplam_hata']} Toplam Hata**
-                        * **Başarılı Madde:** {skor['toplam_madde']} (Toplam) - {skor['toplam_hata']} (Hata) = **{skor['basarili_madde']} Adet**
+                # İndirme Butonu
+                try:
+                    with st.spinner("PDF Raporu Hazırlanıyor..."):
+                        pdf_verisi = pdf_olustur(cevap.text, skor)
+                        
+                    st.download_button(
+                        label="📄 Bu Raporu PDF Olarak İndir",
+                        data=pdf_verisi,
+                        file_name="Gereksinim_Analiz_Raporu.pdf",
+                        mime="application/pdf",
+                        type="primary" # Butonu mavi/vurgulu yapar
+                    )
+                except Exception as e:
+                    st.error(f"PDF oluşturulurken bir hata oluştu: {e}")
+                # --- PDF KISMI SONU ---
 
-                        **2. Risk (Ceza) Puanı Hesabı:**
-                        *(Ağırlıklar - Kritik: 10, Yüksek: 6, Orta: 3)*
-                        * Kritik Risk Cezası: {skor['kritik_hata']} x 10 = **{skor['kritik_hata'] * 10} Puan**
-                        * Yüksek Risk Cezası: {skor['yuksek_hata']} x 6 = **{skor['yuksek_hata'] * 6} Puan**
-                        * Orta Risk Cezası: {skor['orta_hata']} x 3 = **{skor['orta_hata'] * 3} Puan**
-                        * **Toplam Risk Puanı:** **{skor['toplam_ceza']} Puan**
-
-                        **3. Uyum Yüzdesi (%):**
-                        * **Maksimum Olası Risk:** {skor['toplam_madde']} x 10 = **{skor['toplam_madde'] * 10}**
-                        * **Risk Oranı:** {skor['toplam_ceza']} / {max(1, (skor['toplam_madde'] * 10))} = **{skor['toplam_ceza'] / max(1, (skor['toplam_madde'] * 10)):.4f}**
-                        * **Sonuç:** 100 - (Risk Oranı x 100) = **% {skor['mevcut_skor']}**
-                        """)
             else:
                 st.error("❌ Modelden yanıt alınamadı.")
-
-        except Exception as e:
-            st.error(f"❌ Analiz Hatası: {e}")
