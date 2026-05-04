@@ -4,3 +4,5 @@ python-docx
 pypdf
 markdown
 pdfkit
+pkg-config
+libcairo2-dev
