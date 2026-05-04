@@ -4,7 +4,7 @@ from xhtml2pdf import pisa
 import io
 import google.generativeai as genai
 from docx import Document
-import PyPDF2
+import pypdf as PyPDF2
 
 # ---------------------------------------------------------
 # 1. SAYFA VE ARAYÜZ YAPILANDIRMASI
