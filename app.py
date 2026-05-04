@@ -1,6 +1,7 @@
 import streamlit as st
 import markdown
-import pdfkit
+from xhtml2pdf import pisa
+import io
 import google.generativeai as genai
 from docx import Document
 import PyPDF2
@@ -184,8 +185,34 @@ if st.button("🚀 Analizi Başlat"):
                 # Skorlama
                 with st.expander("📊 Doküman Uyum Skoru", expanded=True):
                     skor = skor_hesapla(cevap.text, analiz_metni)
-                    # ... Sizin mevcut skor ve metrik kodlarınız ...
-                    # ... Matematiksel döküm kısmınız vs. ...
+                    st.info(f"Taranan Madde: {skor['toplam_madde']} | Uyumlu: {skor['basarili_madde']} | Hatalı: {skor['toplam_hata']}")
+                    
+                    c1, c2, c3 = st.columns(3)
+                    c1.metric("Uyum Skoru", f"% {skor['mevcut_skor']}", f"-{skor['toplam_ceza']} Risk")
+                    c2.write(f"🔴 {skor['kritik_hata']} Kritik\n🟠 {skor['yuksek_hata']} Yüksek\n🟡 {skor['orta_hata']} Orta")
+                    c3.metric("Uyumlu Madde", f"{skor['basarili_madde']} Adet")
+
+                    st.divider()
+                    
+                    with st.expander("🧮 Puanlama Nasıl Hesaplanıyor? (Matematiksel Döküm)"):
+                        st.markdown(f"""
+                        **1. Madde ve Hata Tespiti:**
+                        * **Toplam Taranan Madde:** {skor['toplam_madde']}
+                        * **Tespit Edilen Hatalar:** {skor['kritik_hata']} Kritik + {skor['yuksek_hata']} Yüksek + {skor['orta_hata']} Orta = **{skor['toplam_hata']} Toplam Hata**
+                        * **Başarılı Madde:** {skor['toplam_madde']} (Toplam) - {skor['toplam_hata']} (Hata) = **{skor['basarili_madde']} Adet**
+
+                        **2. Risk (Ceza) Puanı Hesabı:**
+                        *(Ağırlıklar - Kritik: 10, Yüksek: 6, Orta: 3)*
+                        * Kritik Risk Cezası: {skor['kritik_hata']} x 10 = **{skor['kritik_hata'] * 10} Puan**
+                        * Yüksek Risk Cezası: {skor['yuksek_hata']} x 6 = **{skor['yuksek_hata'] * 6} Puan**
+                        * Orta Risk Cezası: {skor['orta_hata']} x 3 = **{skor['orta_hata'] * 3} Puan**
+                        * **Toplam Risk Puanı:** **{skor['toplam_ceza']} Puan**
+
+                        **3. Uyum Yüzdesi (%):**
+                        * **Maksimum Olası Risk:** {skor['toplam_madde']} x 10 = **{skor['toplam_madde'] * 10}**
+                        * **Risk Oranı:** {skor['toplam_ceza']} / {max(1, (skor['toplam_madde'] * 10))} = **{skor['toplam_ceza'] / max(1, (skor['toplam_madde'] * 10)):.4f}**
+                        * **Sonuç:** 100 - (Risk Oranı x 100) = **% {skor['mevcut_skor']}**
+                        """)
                 
                 # --- İŞTE YENİ EKLENECEK PDF KISMI ---
                 st.divider() # Araya ince bir çizgi çeker
@@ -200,16 +227,13 @@ if st.button("🚀 Analizi Başlat"):
                     <head>
                         <meta charset="UTF-8">
                         <style>
-                            body {{ font-family: 'Arial', sans-serif; padding: 20px; color: #333; }}
-                            h1 {{ color: #2C3E50; border-bottom: 2px solid #2C3E50; padding-bottom: 10px; }}
-                            .skor-kutusu {{ 
-                                background-color: #f8f9fa; padding: 15px; border-left: 5px solid #28a745; 
-                                margin-bottom: 20px; border-radius: 5px;
-                            }}
-                            table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
-                            th, td {{ border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 12px; }}
-                            th {{ background-color: #2C3E50; color: white; }}
-                            tr:nth-child(even) {{ background-color: #f2f2f2; }}
+                            @page {{ size: a4 portrait; margin: 2cm; }}
+                            body {{ font-family: Helvetica, Arial, sans-serif; font-size: 12px; color: #333; }}
+                            h1 {{ color: #2C3E50; border-bottom: 1px solid #2C3E50; padding-bottom: 5px; }}
+                            .skor-kutusu {{ background-color: #f8f9fa; padding: 15px; border-left: 3px solid #28a745; margin-bottom: 20px; }}
+                            table {{ width: 100%; border-collapse: collapse; margin-top: 15px; }}
+                            th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+                            th {{ background-color: #2C3E50; color: white; font-weight: bold; }}
                         </style>
                     </head>
                     <body>
@@ -228,8 +252,14 @@ if st.button("🚀 Analizi Başlat"):
                     </body>
                     </html>
                     """
-                    # HTML'i PDF bytes verisine çevir
-                    return pdfkit.from_string(html_sablon, False, options={"encoding": "UTF-8"})
+                    # HTML'i PDF bytes verisine çevir (xhtml2pdf ile)
+                    pdf_buffer = io.BytesIO()
+                    pisa_status = pisa.CreatePDF(html_sablon, dest=pdf_buffer)
+                    
+                    if pisa_status.err:
+                        raise Exception("PDF oluşturulurken teknik bir hata meydana geldi.")
+                        
+                    return pdf_buffer.getvalue()
 
                 # İndirme Butonu
                 try:
@@ -249,3 +279,6 @@ if st.button("🚀 Analizi Başlat"):
 
             else:
                 st.error("❌ Modelden yanıt alınamadı.")
+
+        except Exception as e:
+            st.error(f"❌ Analiz Hatası: {e}")
