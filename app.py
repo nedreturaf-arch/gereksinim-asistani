@@ -13,7 +13,6 @@ import time
 # ---------------------------------------------------------
 st.set_page_config(page_title="Gereksinim Analiz Asistanı v3.9", layout="wide")
 
-# CSS ile Türkçe karakter desteği ve görsel iyileştirme
 st.markdown("""
     <style>
     .report-font { font-family: 'Arial', sans-serif; }
@@ -34,7 +33,7 @@ with st.sidebar:
             genai.configure(api_key=api_key.strip())
             modeller = [m.name.replace("models/", "") for m in genai.list_models() if "generateContent" in m.supported_generation_methods]
             if modeller:
-                # Flash modelini otomatik seçmeye çalışalım
+                # Flash modelini otomatik bulup seçiyoruz
                 flash_index = 0
                 for i, m in enumerate(modeller):
                     if "flash" in m.lower():
@@ -116,25 +115,19 @@ def pdf_olustur(ai_metni, skor_verisi):
 # 4. ANA AKIŞ
 # ---------------------------------------------------------
 st.title("🎯 Gereksinim & Kalite Analiz Asistanı")
+
+# Geri eklenen analiz kapsamı başlığı
 st.info("""
-
 **📖 Analiz Kapsamı ve Referans Standartlar:**
-
-
 
 Bu sistem, gereksinim metinlerini aşağıdaki uluslararası standartlar ve yerel mevzuatlar çerçevesinde denetleyerek, spesifik ifadeleri ilgili standart/prensip ile eşleştirir:
 
-
-
 * **IEEE 29148:** Yazılım ve Sistem Mühendisliği — Gereksinim Mühendisliği Standartları
-
 * **ISO/IEC 25010:** Yazılım Ürün Kalitesi ve Sistem Kalite Modelleri
-
 * **ISO/IEC 27001:** Bilgi Güvenliği Yönetim Sistemi Gereksinimleri
-
 * **KVKK:** 6698 Sayılı Kişisel Verilerin Korunması Kanunu
-
 """)
+
 yuklenen_dosya = st.file_uploader("Dosya seçin (.docx, .pdf)", type=["docx", "pdf"])
 metin_alani = st.text_area("Veya metni yapıştırın:", height=100)
 
@@ -144,43 +137,44 @@ if st.button("🚀 Analizi Başlat"):
     if not api_key or not girdi_metni.strip() or not secilen_model:
         st.warning("⚠️ Lütfen API anahtarını ve analiz edilecek metni kontrol edin.")
     else:
-        # Eski sonuçları temizle
+        # Analiz başladığında spinner görünür
         with st.spinner("Yapay zeka analiz ediyor..."):
-        if 'analiz_sonucu' in st.session_state:
-            for key in ['analiz_sonucu', 'skorlar', 'analiz_suresi']:
-                if key in st.session_state: del st.session_state[key]
-        
-        try:
-            baslangic = time.time()
-            model = genai.GenerativeModel(secilen_model)
-            sistem_talimati = "Sen uzman bir BT Uyum Denetçisisin. Yanıtlarını SADECE Türkçe ve markdown tabloları halinde ver."
-            
-            # Streaming (Akış) başlatılıyor
-            response = model.generate_content(f"{sistem_talimati}\n\nMETİN:\n{girdi_metni}", stream=True)
-            
-            # Ekranda canlı yazdırma için jeneratör fonksiyonu
-            def stream_yazdir():
-                for chunk in response:
-                    yield chunk.text
+            try:
+                baslangic = time.time()
+                model = genai.GenerativeModel(secilen_model)
+                
+                # Talimat: Başlıklar ve Tablolar zorunlu kılındı
+                sistem_talimati = (
+                    "Sen uzman bir BT Uyum Denetçisisin. Yanıtlarını SADECE Türkçe ver. "
+                    "Analizini şu 4 ana başlık altında topla ve her başlık altında bulgularını bir tabloda göster: "
+                    "1. IEEE 29148 Analizi, 2. ISO/IEC 25010 Analizi, 3. ISO/IEC 27001 Analizi, 4. KVKK Analizi. "
+                    "Her tablo 'İfade', 'Durum' ve 'Öneri' sütunlarını içermelidir."
+                )
+                
+                response = model.generate_content(f"{sistem_talimati}\n\nMETİN:\n{girdi_metni}", stream=True)
+                
+                # Canlı akış jeneratörü
+                def stream_yazdir():
+                    for chunk in response:
+                        yield chunk.text
 
-            # Canlı çıktı alanı
-            full_text = st.write_stream(stream_yazdir())
-            
-            bitis = time.time()
-            gecen_sure = round(bitis - baslangic, 2)
-            
-            # Sonuçları hafızaya kaydet (PDF ve Skorlar için)
-            st.session_state['analiz_sonucu'] = full_text
-            st.session_state['skorlar'] = skor_hesapla(full_text, girdi_metni)
-            st.session_state['analiz_suresi'] = gecen_sure
-            
-            # Akış bittikten sonra sayfayı sonuçları sabitlemek için tetikle
-            st.rerun()
+                # Ekrana sıra ile yazdırma
+                full_text = st.write_stream(stream_yazdir())
+                
+                bitis = time.time()
+                gecen_sure = round(bitis - baslangic, 2)
+                
+                # Sonuçları sakla
+                st.session_state['analiz_sonucu'] = full_text
+                st.session_state['skorlar'] = skor_hesapla(full_text, girdi_metni)
+                st.session_state['analiz_suresi'] = gecen_sure
+                
+                st.rerun() # UI'ı sabitlemek için
 
-        except Exception as e:
-            st.error(f"Analiz sırasında hata: {e}")
+            except Exception as e:
+                st.error(f"Analiz sırasında hata: {e}")
 
-# Hafızada sonuç varsa (akış bittikten sonra burası çalışır)
+# Sonuç ekranı (Akış bittikten sonra)
 if 'analiz_sonucu' in st.session_state:
     sure = st.session_state.get('analiz_suresi', 0)
     st.success(f"✅ Analiz {sure} saniyede tamamlandı!")
