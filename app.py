@@ -6,6 +6,7 @@ import base64
 import google.generativeai as genai
 from docx import Document
 import pypdf as PyPDF2
+import time  # Süre ölçümü için eklendi
 
 # ---------------------------------------------------------
 # 1. SAYFA VE ARAYÜZ YAPILANDIRMASI
@@ -54,7 +55,6 @@ def dosya_oku(dosya):
     return ""
 
 def skor_hesapla(ai_cevabi, analiz_metni):
-    # (Mevcut matematiksel mantığınız korunmuştur)
     satirlar = ai_cevabi.split("\n")
     k, y, o = 0, 0, 0
     aktif = 0
@@ -76,10 +76,8 @@ def skor_hesapla(ai_cevabi, analiz_metni):
     return {"kritik": k, "yuksek": y, "orta": o, "toplam_h": toplam_h, "toplam_m": toplam_m, "skor": skor, "ceza": ceza}
 
 def pdf_olustur(ai_metni, skor_verisi):
-    # ÇÖZÜM 1: TÜRKÇE KARAKTER SORUNU İÇİN ÖZEL HTML ŞABLONU
     html_tablolar = markdown.markdown(ai_metni, extensions=['tables'])
     
-    # xhtml2pdf için Unicode (DejaVu Sans) desteği içeren şablon
     html_template = f"""
     <html>
     <head>
@@ -127,7 +125,6 @@ Bu sistem, gereksinim metinlerini aşağıdaki uluslararası standartlar ve yere
 yuklenen_dosya = st.file_uploader("Dosya seçin (.docx, .pdf)", type=["docx", "pdf"])
 metin_alani = st.text_area("Veya metni yapıştırın:", height=100)
 
-# ÇÖZÜM 2: YAVAŞ ÇALIŞMA SORUNU İÇİN HAFIZA YÖNETİMİ
 if st.button("🚀 Analizi Başlat"):
     girdi_metni = dosya_oku(yuklenen_dosya) if yuklenen_dosya else metin_alani
     
@@ -136,19 +133,27 @@ if st.button("🚀 Analizi Başlat"):
     else:
         with st.spinner("Yapay zeka analiz ediyor..."):
             try:
+                # Süre ölçümü başlangıcı
+                baslangic = time.time()
+                
                 model = genai.GenerativeModel(secilen_model)
                 sistem_talimati = "Sen uzman bir BT Uyum Denetçisisin. Yanıtlarını Türkçe ve tablolar halinde ver."
                 cevap = model.generate_content(f"{sistem_talimati}\n\nMETİN:\n{girdi_metni}")
                 
-                # Sonuçları hafızaya al (Böylece sayfa her etkileşimde Gemini'ye gitmez)
+                # Süre ölçümü bitişi
+                bitis = time.time()
+                gecen_sure = round(bitis - baslangic, 2)
+                
                 st.session_state['analiz_sonucu'] = cevap.text
                 st.session_state['skorlar'] = skor_hesapla(cevap.text, girdi_metni)
+                st.session_state['analiz_suresi'] = gecen_sure
             except Exception as e:
                 st.error(f"Analiz sırasında hata: {e}")
 
 # Hafızada sonuç varsa göster
 if 'analiz_sonucu' in st.session_state:
-    st.success("✅ Analiz Tamamlandı!")
+    sure_bilgisi = st.session_state.get('analiz_suresi', 0)
+    st.success(f"✅ Analiz {sure_bilgisi} saniyede tamamlandı!")
     st.markdown(st.session_state['analiz_sonucu'])
     
     with st.expander("📊 Uyum Skoru Detayları", expanded=True):
@@ -156,12 +161,10 @@ if 'analiz_sonucu' in st.session_state:
         st.metric("Uyum Skoru", f"% {s['skor']}", f"-{s['ceza']} Risk")
         st.write(f"🔴 {s['kritik']} Kritik | 🟠 {s['yuksek']} Yüksek | 🟡 {s['orta']} Orta")
 
-    # ÇÖZÜM 3: AYRI SEKMEDE AÇMA VE İNDİRME ÇÖZÜMÜ
     st.divider()
     pdf_bytes = pdf_olustur(st.session_state['analiz_sonucu'], st.session_state['skorlar'])
     b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
     
-    # HTML ile "Yeni Sekmede Aç" köprüsü
     pdf_link = f'<a href="data:application/pdf;base64,{b64_pdf}" target="_blank" style="text-decoration:none;"><button style="background-color:#ff4b4b; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer;">📄 Raporu Yeni Sekmede Aç / Yazdır</button></a>'
     
     col1, col2 = st.columns(2)
