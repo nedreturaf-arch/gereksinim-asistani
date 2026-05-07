@@ -348,7 +348,7 @@ Her öneri somut, uygulanabilir ve ölçülebilir olsun.
                 "temperature": 0.1,
                 "top_p": 0.8,
                 "top_k": 40,
-                "max_output_tokens": 6144
+                "max_output_tokens": 8192
             }
 
             with st.spinner("Analiz ediliyor..."):
