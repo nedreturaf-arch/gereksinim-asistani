@@ -145,6 +145,7 @@ if st.button("🚀 Analizi Başlat"):
         st.warning("⚠️ Lütfen API anahtarını ve analiz edilecek metni kontrol edin.")
     else:
         # Eski sonuçları temizle
+        with st.spinner("Yapay zeka analiz ediyor..."):
         if 'analiz_sonucu' in st.session_state:
             for key in ['analiz_sonucu', 'skorlar', 'analiz_suresi']:
                 if key in st.session_state: del st.session_state[key]
