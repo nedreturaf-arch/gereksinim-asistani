@@ -1,187 +1,167 @@
 import streamlit as st
-import markdown
-from xhtml2pdf import pisa
-import io
-import base64
 import google.generativeai as genai
 from docx import Document
-import pypdf as PyPDF2
-import time # Süre ölçümü için
+import PyPDF2
+import time
 
-# ---------------------------------------------------------
-# 1. SAYFA VE ARAYÜZ YAPILANDIRMASI
-# ---------------------------------------------------------
-st.set_page_config(page_title="Gereksinim Analiz Asistanı v3.9", layout="wide")
+# --- 1. SAYFA VE ARAYÜZ YAPILANDIRMASI ---
+st.set_page_config(page_title="Gereksinim Analiz Asistanı v3.6", layout="wide")
 
-# CSS ile Türkçe karakter desteği ve görsel iyileştirme
-st.markdown("""
-    <style>
-    .report-font { font-family: 'Arial', sans-serif; }
-    </style>
-    """, unsafe_allow_html=True)
-
-# ---------------------------------------------------------
-# 2. GÜVENLİK VE API YÖNETİMİ
-# ---------------------------------------------------------
+# --- 2. GÜVENLİK VE API YÖNETİMİ (SOL MENÜ) ---
 with st.sidebar:
     st.header("⚙️ Ayarlar")
     api_key = st.text_input("Gemini API Anahtarınızı girin:", type="password")
-    st.divider()
+    st.divider() 
+    
     secilen_model = None
-
-    if api_key:
+    if api_key: 
         try:
             genai.configure(api_key=api_key.strip())
-            modeller = [m.name.replace("models/", "") for m in genai.list_models() if "generateContent" in m.supported_generation_methods]
-            if modeller:
-                secilen_model = st.selectbox("🤖 Model Seçin:", modeller, index=0)
+            modeller = [m.name.replace("models/", "") for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+            secilen_model = st.selectbox("🤖 Model Seçin:", modeller)
         except Exception as e:
-            st.error(f"⚠️ API Hatası: {e}")
+            st.error("⚠️ API Hatası: Bağlantı kurulamadı.")
 
-# ---------------------------------------------------------
-# 3. YARDIMCI FONKSİYONLAR
-# ---------------------------------------------------------
-def dosya_oku(dosya):
-    if dosya is None: return ""
-    try:
-        if dosya.name.lower().endswith(".docx"):
-            doc = Document(dosya)
-            return "\n".join([p.text.strip() for p in doc.paragraphs if p.text.strip()])
-        elif dosya.name.lower().endswith(".pdf"):
-            pdf_reader = PyPDF2.PdfReader(dosya)
-            return "\n".join([sayfa.extract_text() for sayfa in pdf_reader.pages if sayfa.extract_text()])
-    except Exception as e:
-        st.error(f"Dosya okuma hatası: {e}")
-    return ""
-
-def skor_hesapla(ai_cevabi, analiz_metni):
-    satirlar = ai_cevabi.split("\n")
-    k, y, o = 0, 0, 0
-    aktif = 0
-    for satir in satirlar:
-        s = satir.strip()
-        if "IEEE 29148" in s: aktif = 1
-        elif "KVKK" in s: aktif = 2
-        elif "ISO 27001" in s: aktif = 3
-        elif "ISO 25010" in s: aktif = 4
-        if s.startswith("|") and s.endswith("|") and "---" not in s and "İfade" not in s:
-            if aktif in [2, 3]: k += 1
-            elif aktif == 4: y += 1
-            elif aktif == 1: o += 1
-    
-    toplam_m = len([s for s in analiz_metni.split("\n") if len(s.strip()) > 15]) or 1
-    toplam_h = k + y + o
-    ceza = (k * 10 + y * 6 + o * 3)
-    skor = max(0, round(100 * (1 - (ceza / (toplam_m * 10)))))
-    return {"kritik": k, "yuksek": y, "orta": o, "toplam_h": toplam_h, "toplam_m": toplam_m, "skor": skor, "ceza": ceza}
-
-def pdf_olustur(ai_metni, skor_verisi):
-    html_tablolar = markdown.markdown(ai_metni, extensions=['tables'])
-    html_template = f"""
-    <html>
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <style>
-            @page {{ size: a4; margin: 1cm; }}
-            body {{ font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #333; }}
-            h1 {{ color: #2C3E50; text-align: center; border-bottom: 1px solid #ccc; }}
-            .skor {{ background-color: #f1f4f9; padding: 10px; border-radius: 5px; margin-bottom: 20px; }}
-            table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
-            th, td {{ border: 1px solid #444; padding: 6px; text-align: left; }}
-            th {{ background-color: #2C3E50; color: white; }}
-        </style>
-    </head>
-    <body>
-        <h1>Gereksinim Analiz Raporu</h1>
-        <div class="skor">
-            <b>Genel Uyum Skoru: %{skor_verisi['skor']}</b><br>
-            Taranan Madde: {skor_verisi['toplam_m']} | Hatalı: {skor_verisi['toplam_h']}<br>
-            (Kritik: {skor_verisi['kritik']}, Yuksek: {skor_verisi['yuksek']}, Orta: {skor_verisi['orta']})
-        </div>
-        {html_tablolar}
-    </body>
-    </html>
-    """
-    pdf_buffer = io.BytesIO()
-    pisa.CreatePDF(html_template, dest=pdf_buffer, encoding='utf-8')
-    return pdf_buffer.getvalue()
-
-# ---------------------------------------------------------
-# 4. ANA AKIŞ
-# ---------------------------------------------------------
+# --- 3. ANA EKRAN VE GENİŞLETİLMİŞ BİLGİLENDİRME ---
 st.title("🎯 Gereksinim & Kalite Analiz Asistanı")
 st.info("""
 **📖 Analiz Kapsamı ve Referans Standartlar:**
-
-Bu sistem, gereksinim metinlerini aşağıdaki uluslararası standartlar ve yerel mevzuatlar çerçevesinde denetleyerek, spesifik ifadeleri ilgili standart/prensip ile eşleştirir:
+Bu sistem, gereksinim metinlerini aşağıdaki uluslararası standartlar ve yerel mevzuatlar çerçevesinde denetleyerek, spesifik ifadeleri doğrudan ilgili maddeyle eşleştirir:
 
 * **IEEE 29148:** Yazılım ve Sistem Mühendisliği — Gereksinim Mühendisliği Standartları
-* **ISO/IEC 25010:** Yazılım Ürün Kalitesi ve Sistem Kalite Modelleri
+* **ISO/IEC 25010:** Yazılım Ürün Kalitesi ve Sistem Kalite Modelleri (Sistem Verimliliği)
 * **ISO/IEC 27001:** Bilgi Güvenliği Yönetim Sistemi Gereksinimleri
 * **KVKK:** 6698 Sayılı Kişisel Verilerin Korunması Kanunu
 """)
+st.divider()
 
-yuklenen_dosya = st.file_uploader("Dosya seçin (.docx, .pdf)", type=["docx", "pdf"])
-metin_alani = st.text_area("Veya metni yapıştırın:", height=100)
+# --- 4. VERİ GİRİŞİ (STATELESS MİMARİ) ---
+st.subheader("📁 Veri Girişi")
+yuklenen_dosya = st.file_uploader("Analiz edilecek dosyayı seçin (.docx, .pdf)", type=["docx", "pdf"])
+metin_alani = st.text_area("Veya analiz edilecek metni buraya yapıştırın:", height=150)
 
+def dosya_oku(dosya):
+    try:
+        if dosya.name.endswith('.docx'):
+            doc = Document(dosya)
+            return "\n".join([p.text for p in doc.paragraphs])
+        elif dosya.name.endswith('.pdf'):
+            pdf_reader = PyPDF2.PdfReader(dosya)
+            metin = ""
+            for sayfa in range(len(pdf_reader.pages)):
+                metin += pdf_reader.pages[sayfa].extract_text() + "\n"
+            return metin
+    except Exception as e:
+        st.error(f"Dosya okuma hatası: {e}")
+        return ""
+    return ""
+
+# --- 5. YAPAY ZEKA ANALİZ SÜRECİ ---
 if st.button("🚀 Analizi Başlat"):
-    girdi_metni = dosya_oku(yuklenen_dosya) if yuklenen_dosya else metin_alani
-    
-    if not api_key or not girdi_metni.strip() or not secilen_model:
-        st.warning("⚠️ Lütfen API anahtarını ve analiz edilecek metni kontrol edin.")
-    else:
-        # Analiz başladığında sonuçları sıfırla
-        for key in ['analiz_sonucu', 'skorlar', 'analiz_suresi']:
-            if key in st.session_state: del st.session_state[key]
+    analiz_metni = dosya_oku(yuklenen_dosya) if yuklenen_dosya else metin_alani
 
-        with st.spinner("Yapay zeka analiz ediyor..."):
-            try:
-                baslangic_zamani = time.time()
-                model = genai.GenerativeModel(secilen_model)
-                sistem_talimati = "Sen uzman bir BT Uyum Denetçisisin. Yanıtlarını Türkçe ve tablolar halinde ver."
+    if not api_key or not analiz_metni:
+        st.warning("⚠️ Lütfen API anahtarını ve analiz edilecek metni sağlayın.")
+    else:
+        try:
+            model = genai.GenerativeModel(secilen_model)
+            
+            # --- PROMPT MÜHENDİSLİĞİ (ORİJİNAL HALİ KORUNDU) ---
+            sistem_talimati = """
+            Sen uzman bir Yazılım Kalite Direktörü ve BT Uyum Denetçisisin.
+            Gereksinimleri analiz ederken 'İzlenebilirlik' (Traceability) prensibini uygula.
+
+            KURAL 1: Doğrudan tablolara başla. Giriş/Sonuç cümlesi yazma.
+            KURAL 2: Her ihlal için gereksinim belgesindeki 'İLGİLİ İFADEYİ' alıntıla ve hangi 'STANDART MADDESİ' ile neden çeliştiğini açıkla.
+            KURAL 3: İhlal yoksa "✅ Tam uyum sağlanmıştır" yaz.
+            KURAL 4: Risk İkonları: IEEE(🟡), KVKK/ISO27001(🔴), ISO25010(🟠), Başarılı(🟢).
+            KURAL 5 (ÖNEMLİ): Tablo 5 (Başarılı Örnekler) kısmına metindeki tüm maddeler arasından en az 5, en fazla 10 adet en iyi pratik (best practice) örneğini KESİNLİKLE ekle. Özet geçme.
+
+            ### 1. 📏 IEEE 29148 Gereksinim Kalitesi Uyumluluğu
+            | Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı ve Analiz | Uyum Önerisi |
+            |---|---|---|---|
+
+            ### 2. 🛡️ KVKK ve Veri Gizliliği Mevzuatı Uyumluluğu
+            | Gereksinimdeki İfade | KVKK Riski | Mevzuat Maddesi ve Çelişme Nedeni | Hukuki Uyum Şartı |
+            |---|---|---|---|
+
+            ### 3. 🔒 ISO 27001 Bilgi Güvenliği Uyumluluğu
+            | Gereksinimdeki İfade | Güvenlik Zafiyeti | Referans Madde ve Teknik Gerekçe | Teknik Önlem |
+            |---|---|---|---|
+
+            ### 4. ⚙️ ISO 25010 Yazılım Kalite Modeli Uyumluluğu
+            | Gereksinimdeki İfade | Kalite Eksikliği | Karakteristik ve Analiz | Kalite Hedefi |
+            |---|---|---|---|
+
+            ### 5. 🌟 Standartlara Tam Uyumlu Gereksinimler
+            | Başarılı Gereksinim | Karşıladığı Standartlar | Uyum Gerekçesi (Neden Başarılı?) |
+            |---|---|---|
+            """
+            
+            with st.spinner("Yapay Zeka İzlenebilirlik Analizini Gerçekleştiriyor..."):
+                # Streaming özelliği eklendi
+                response = model.generate_content(f"{sistem_talimati}\n\nAnaliz edilecek metin:\n{analiz_metni}", stream=True)
                 
-                # Akış (Stream) modunu aktif ettik
-                response = model.generate_content(f"{sistem_talimati}\n\nMETİN:\n{girdi_metni}", stream=True)
-                
-                # Ekrana sıra ile yazdırma işlemi
                 placeholder = st.empty()
                 full_text = ""
+                
                 for chunk in response:
                     full_text += chunk.text
                     placeholder.markdown(full_text)
                 
-                bitis_zamani = time.time()
-                gecen_sure = round(bitis_zamani - baslangic_zamani, 2)
+                st.success("✅ Kapsamlı Uyumluluk Analizi Tamamlanmıştır!")
+            
+            # --- 6. GÜNCELLENMİŞ POZİTİF SKORLAMA ALGORİTMASI ---
+            with st.expander("📊 Doküman Uyum Skoru (ISTQB Risk Temelli Analiz)", expanded=True):
+                # full_text üzerinden skorlama yapılır
+                satirlar = full_text.split('\n')
                 
-                # Verileri kaydet
-                st.session_state['analiz_sonucu'] = full_text
-                st.session_state['skorlar'] = skor_hesapla(full_text, girdi_metni)
-                st.session_state['analiz_suresi'] = gecen_sure
+                kritik_hata, yuksek_hata, orta_hata = 0, 0, 0
+                aktif_tablo = 0
                 
-                st.rerun()
+                for satir in satirlar:
+                    # Başlıkları yakala
+                    if "1." in satir and "IEEE" in satir: aktif_tablo = 1
+                    elif "2." in satir and "KVKK" in satir: aktif_tablo = 2
+                    elif "3." in satir and "ISO 27001" in satir: aktif_tablo = 3
+                    elif "4." in satir and "ISO 25010" in satir: aktif_tablo = 4
+                    elif "5." in satir and "Uyumlu" in satir: aktif_tablo = 5
+                    
+                    # Sadece 1, 2, 3 ve 4 numaralı HATA tablolarındaki satırları sayıyoruz
+                    if satir.count('|') >= 3 and "---" not in satir and "Gereksinimdeki İfade" not in satir and aktif_tablo in [1, 2, 3, 4]:
+                        if aktif_tablo in [2, 3]: kritik_hata += 1
+                        elif aktif_tablo == 4: yuksek_hata += 1
+                        elif aktif_tablo == 1: orta_hata += 1
 
-            except Exception as e:
-                st.error(f"Analiz sırasında hata: {e}")
+                # Orijinal metot: Dökümanın genel hacminden toplam maddeyi tahmin et
+                toplam_madde = len([s for s in analiz_metni.split('\n') if len(s.strip()) > 15])
+                
+                # Tablolardan okunan net hata sayısı
+                toplam_hata = kritik_hata + yuksek_hata + orta_hata
+                
+                # Matematiksel olarak tam uyumlu madde sayısı
+                basarili_madde = max(0, toplam_madde - toplam_hata)
+                
+                if toplam_madde == 0: toplam_madde = 1 # Sıfıra bölme hatasını önlemek için
 
-# Hafızada sonuç varsa göster
-if 'analiz_sonucu' in st.session_state:
-    sure = st.session_state.get('analiz_suresi', 0)
-    st.success(f"✅ Analiz {sure} saniyede tamamlandı!")
-    st.markdown(st.session_state['analiz_sonucu'])
-    
-    with st.expander("📊 Uyum Skoru Detayları", expanded=True):
-        s = st.session_state['skorlar']
-        st.metric("Uyum Skoru", f"% {s['skor']}", f"-{s['ceza']} Risk")
-        st.write(f"🔴 {s['kritik']} Kritik | 🟠 {s['yuksek']} Yüksek | 🟡 {s['orta']} Orta")
+                # Risk ağırlıklandırma
+                toplam_ceza = (kritik_hata * 10) + (yuksek_hata * 6) + (orta_hata * 3)
+                mevcut_skor = max(0, 100 - toplam_ceza)
 
-    st.divider()
-    pdf_bytes = pdf_olustur(st.session_state['analiz_sonucu'], st.session_state['skorlar'])
-    b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-    
-    pdf_link = f'<a href="data:application/pdf;base64,{b64_pdf}" target="_blank" style="text-decoration:none;"><button style="background-color:#ff4b4b; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer;">📄 Raporu Yeni Sekmede Aç / Yazdır</button></a>'
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown(pdf_link, unsafe_allow_html=True)
-    with col2:
-        st.download_button(label="📥 Raporu PDF Olarak İndir", data=pdf_bytes, file_name="Analiz_Raporu.pdf", mime="application/pdf")
+                st.info(f"""
+                📊 **Yönetici Özeti:** İnceleme sonucunda döküman içerisindeki **{toplam_madde}** madde/ifade taranmıştır. 
+                Sistem; **{basarili_madde}** maddeyi standartlara tam uyumlu bulurken, **{toplam_hata}** maddede gelişim alanı tespit etmiştir.
+                """)
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Güncel Uyum Skoru", f"% {mevcut_skor}", f"-{toplam_ceza} Puan", delta_color="inverse")
+                with col2:
+                    st.write(f"**🔴 {kritik_hata}** Kritik | **🟠 {yuksek_hata}** Yüksek | **🟡 {orta_hata}** Orta")
+                with col3:
+                    st.metric("Tam Uyumlu Madde", f"{basarili_madde} Adet", "Standartlara Uygun")
+                
+                st.divider()
+                st.caption("💡 **Mühendislik Notu:** Bu rapor ISTQB Risk Temelli Analiz prensiplerine göre oluşturulmuştur. AI tarafından oluşturulan Tablo 5, sadece en iyi 5-10 örneği göstermektedir.")
+        except Exception as e:
+            st.error(f"❌ Analiz Hatası: {e}")
