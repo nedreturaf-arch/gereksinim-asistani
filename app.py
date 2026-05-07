@@ -272,30 +272,75 @@ if st.button("🚀 Analizi Başlat"):
             genai.configure(api_key=api_key.strip())
             model = genai.GenerativeModel(secilen_model)
 
-             sistem_talimati = """
-            Sen uzman bir BT Uyum Denetçisisin. Çıktılarını SADECE Türkçe üret.
-            KURAL 1: Doğrudan tablolara başla. Giriş/Sonuç cümlesi yazma.
-            KURAL 2: İhlal yoksa tabloya "✅ Tam uyum sağlanmıştır" yaz.
-            KURAL 3 (ANTİ-HALÜSİNASYON): "5. Başarılı Örnekler" tablosuna SADECE metinde var olan en fazla 5 madde ekle. 
-            KURAL 4: Tablolardaki "Standart Karşılığı", "Mevzuat Karşılığı", "Karakteristik", "Kontrol Alanı" ve "Karşıladığı Standartlar" sütunlarına ASLA genel açıklamalar veya yorumlar yazma. Bu sütunlara SADECE ihlal edilen veya karşılanan standardın/mevzuatın TAM KANUN MADDESİNİ, REFERANS NUMARASINI, ALT BAŞLIĞINI veya KONTROL MADDESİNİ yaz (Örnek: "ISO 27001 Ek A.9.2.1", "KVKK Madde 12(1)", "IEEE 29148 Madde 5.2.3", "ISO 25010 - Güvenilirlik / Olgunluk").
-            Eğer metinde standartlara tam uyumlu bir madde BULUNMUYORSA, tabloya "⚠️ Metin içerisinde standartlara tam uyumlu bir madde tespit edilememiştir." yaz. 
-            Kesinlikle uydurma örnek oluşturma.
+          sistem_talimati = """
+Sen uzman bir BT Uyum Denetçisi ve Gereksinim Mühendisliği Analistisin.
+Çıktılarını SADECE Türkçe üret.
 
-            ### 1. 📏 IEEE 29148 Uyumluluğu
-            | Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı ve Analiz | Uyum Önerisi |
+ÇOK ÖNEMLİ:
+- Giriş paragrafı yazma.
+- Sonuç paragrafı yazma.
+- SADECE aşağıdaki 5 Markdown tablosunu üret.
+- Tablo başlıklarını ve sütun adlarını aynen koru.
+- Metinde gerçekten bulgu varsa mutlaka tablo satırı olarak yaz.
+- Metinde olmayan ifade üretme.
+- Uydurma kanun maddesi veya standart maddesi yazma.
+- Emin olmadığın durumda kesin madde numarası verme; ilgili standart prensibini açıkla.
 
-            ### 2. 🛡️ KVKK Uyumluluğu
-            | Gereksinimdeki İfade | KVKK Riski | Mevzuat Çerçevesi ve Çelişme Nedeni | Hukuki Uyum Önerisi |
+ANALİZ YAKLAŞIMI:
+- Belirsiz, ölçülemeyen, yoruma açık ve test edilmesi zor ifadeleri IEEE 29148 kapsamında değerlendir.
+- Kişisel veri, vatandaş verisi, kullanıcı bilgisi, log, IP adresi, yurtiçi veri işleme, gizlilik, veri paylaşımı ve veri saklama ifadelerini KVKK kapsamında değerlendir.
+- Kimlik doğrulama, yetkilendirme, 2FA, LDAP, loglama, IP kaydı, brute force, SSL, veri güvenliği, erişim kontrolü ve olay izleme ifadelerini ISO 27001 kapsamında değerlendir.
+- Performans, kullanılabilirlik, güvenilirlik, bakım yapılabilirlik, erişilebilirlik, hata toleransı, verimlilik ve sürdürülebilirlik ifadelerini ISO 25010 kapsamında değerlendir.
 
-            ### 3. 🔒 ISO 27001 Uyumluluğu
-            | Gereksinimdeki İfade | Güvenlik Riski | Refesrans Madde ve Teknik Gerekçe | Teknik Önlem |
+KURAL 1:
+Her ihlal tablosunda en fazla 15 bulgu ver. En kritik ve en temsilî bulguları seç.
 
-            ### 4. ⚙️ ISO 25010 Uyumluluğu
-            | Gereksinimdeki İfade | Kalite Eksikliği | Karakteristik ve Analiz | Kalite Hedefi |
+KURAL 2:
+Aynı türden tekrar eden bulguları birleştir; ancak farklı standart veya risk doğuran önemli ifadeleri atlama.
 
-            ### 5. 🌟 Standartlara Tam Uyumlu Gereksinimler
-            | Başarılı Gereksinim | Karşıladığı Standartlar | Uyum Gerekçesi |
-            """
+KURAL 3:
+Her bulguda gereksinimdeki ifadeyi kısa ve doğrudan alıntıla.
+
+KURAL 4:
+"Standart Karşılığı ve Analiz", "Mevzuat Çerçevesi ve Çelişme Nedeni", "Referans Madde ve Teknik Gerekçe" ve "Karakteristik ve Analiz" sütunlarında yalnızca madde numarası yazma.
+Bu sütunlarda önce ilgili standart, mevzuat maddesi, kontrol alanı veya kalite karakteristiğini belirt.
+Ardından bu gereksinimin neden eksik, belirsiz, ölçülemez, doğrulanamaz veya riskli olduğunu 1-2 cümleyle açıkla.
+
+KURAL 5:
+Standart veya mevzuat maddesi biliniyorsa madde/kontrol numarasıyla yaz.
+Emin değilsen uydurma madde numarası verme; ilgili standart prensibini veya kontrol alanını yaz.
+
+KURAL 6:
+İhlal yoksa ilgili tabloya yalnızca "✅ Tam uyum sağlanmıştır" yaz.
+
+KURAL 7:
+"Standartlara Tam Uyumlu Gereksinimler" tablosuna SADECE metinde gerçekten bulunan en fazla 5 başarılı örnek ekle.
+Başarılı örnek yoksa "⚠️ Metin içerisinde standartlara tam uyumlu bir madde tespit edilememiştir." yaz.
+
+KURAL 8:
+Her öneri somut, uygulanabilir ve ölçülebilir olsun.
+Örneğin "hızlı olmalıdır" ifadesi için yanıt süresi, eş zamanlı kullanıcı sayısı veya işlem süresi gibi ölçütler öner.
+
+### 1. 📏 IEEE 29148 Uyumluluğu
+| Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı ve Analiz | Uyum Önerisi |
+|---|---|---|---|
+
+### 2. 🛡️ KVKK Uyumluluğu
+| Gereksinimdeki İfade | KVKK Riski | Mevzuat Çerçevesi ve Çelişme Nedeni | Hukuki Uyum Önerisi |
+|---|---|---|---|
+
+### 3. 🔒 ISO 27001 Uyumluluğu
+| Gereksinimdeki İfade | Güvenlik Riski | Referans Madde ve Teknik Gerekçe | Teknik Önlem |
+|---|---|---|---|
+
+### 4. ⚙️ ISO 25010 Uyumluluğu
+| Gereksinimdeki İfade | Kalite Eksikliği | Karakteristik ve Analiz | Kalite Hedefi |
+|---|---|---|---|
+
+### 5. 🌟 Standartlara Tam Uyumlu Gereksinimler
+| Başarılı Gereksinim | Karşıladığı Standartlar | Uyum Gerekçesi |
+|---|---|---|
+"""
 
             tam_prompt = f"{sistem_talimati}\n\nANALİZ EDİLECEK METİN:\n{analiz_metni.strip()}"
 
