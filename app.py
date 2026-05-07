@@ -3,6 +3,7 @@ import markdown
 from xhtml2pdf import pisa
 import io
 import google.generativeai as genai
+import time
 from docx import Document
 import pypdf as PyPDF2
 
@@ -95,6 +96,15 @@ def skor_hesapla(ai_cevabi, analiz_metni):
     satirlar = ai_cevabi.split("\n")
     kritik_hata, yuksek_hata, orta_hata = 0, 0, 0
     aktif_tablo = 0
+    
+def sure_formatla(saniye):
+    dakika = int(saniye // 60)
+    kalan_saniye = round(saniye % 60, 2)
+
+    if dakika > 0:
+        return f"{dakika} dk {kalan_saniye} sn"
+
+    return f"{kalan_saniye} sn"
 
     for satir in satirlar:
         temiz_satir = satir.strip()
@@ -176,10 +186,21 @@ if st.button("🚀 Analizi Başlat"):
             tam_prompt = f"{sistem_talimati}\n\nANALİZ EDİLECEK METİN:\n{analiz_metni.strip()}"
 
             with st.spinner("Analiz ediliyor..."):
-                cevap = model.generate_content(tam_prompt)
+                    baslangic_zamani = time.time()
+                    cevap = model.generate_content(tam_prompt)
+                    bitis_zamani = time.time()
+
+            gecen_sure = round(bitis_zamani - baslangic_zamani, 2)
+            gecen_sure_yazi = sure_formatla(gecen_sure)
 
             if cevap and hasattr(cevap, "text"):
-                st.success("✅ Analiz Tamamlandı!")
+                st.success(f"✅ Analiz Tamamlandı! Süre: {gecen_sure_yazi}")
+        
+                st.metric(
+                label="⏱️ Analiz Süresi",
+                value=gecen_sure_yazi
+                )
+
                 st.markdown(cevap.text)
                 
                 # Skorlama
