@@ -116,7 +116,25 @@ def pdf_olustur(ai_metni, skor_verisi):
 # 4. ANA AKIŞ
 # ---------------------------------------------------------
 st.title("🎯 Gereksinim & Kalite Analiz Asistanı")
+st.info("""
 
+**📖 Analiz Kapsamı ve Referans Standartlar:**
+
+
+
+Bu sistem, gereksinim metinlerini aşağıdaki uluslararası standartlar ve yerel mevzuatlar çerçevesinde denetleyerek, spesifik ifadeleri ilgili standart/prensip ile eşleştirir:
+
+
+
+* **IEEE 29148:** Yazılım ve Sistem Mühendisliği — Gereksinim Mühendisliği Standartları
+
+* **ISO/IEC 25010:** Yazılım Ürün Kalitesi ve Sistem Kalite Modelleri
+
+* **ISO/IEC 27001:** Bilgi Güvenliği Yönetim Sistemi Gereksinimleri
+
+* **KVKK:** 6698 Sayılı Kişisel Verilerin Korunması Kanunu
+
+""")
 yuklenen_dosya = st.file_uploader("Dosya seçin (.docx, .pdf)", type=["docx", "pdf"])
 metin_alani = st.text_area("Veya metni yapıştırın:", height=100)
 
