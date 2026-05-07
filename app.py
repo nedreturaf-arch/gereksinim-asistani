@@ -6,7 +6,7 @@ import base64
 import google.generativeai as genai
 from docx import Document
 import pypdf as PyPDF2
-import time  # Süre ölçümü için eklendi
+import time
 
 # ---------------------------------------------------------
 # 1. SAYFA VE ARAYÜZ YAPILANDIRMASI
@@ -34,12 +34,18 @@ with st.sidebar:
             genai.configure(api_key=api_key.strip())
             modeller = [m.name.replace("models/", "") for m in genai.list_models() if "generateContent" in m.supported_generation_methods]
             if modeller:
-                secilen_model = st.selectbox("🤖 Model Seçin:", modeller, index=0)
+                # Flash modelini otomatik seçmeye çalışalım
+                flash_index = 0
+                for i, m in enumerate(modeller):
+                    if "flash" in m.lower():
+                        flash_index = i
+                        break
+                secilen_model = st.selectbox("🤖 Model Seçin:", modeller, index=flash_index)
         except Exception as e:
             st.error(f"⚠️ API Hatası: {e}")
 
 # ---------------------------------------------------------
-# 3. YARDIMCI FONKSİYONLAR (HIZLANDIRILMIŞ)
+# 3. YARDIMCI FONKSİYONLAR
 # ---------------------------------------------------------
 def dosya_oku(dosya):
     if dosya is None: return ""
@@ -77,7 +83,6 @@ def skor_hesapla(ai_cevabi, analiz_metni):
 
 def pdf_olustur(ai_metni, skor_verisi):
     html_tablolar = markdown.markdown(ai_metni, extensions=['tables'])
-    
     html_template = f"""
     <html>
     <head>
@@ -108,19 +113,9 @@ def pdf_olustur(ai_metni, skor_verisi):
     return pdf_buffer.getvalue()
 
 # ---------------------------------------------------------
-# 4. ANA AKIŞ VE HIZLANDIRMA (SESSION STATE)
+# 4. ANA AKIŞ
 # ---------------------------------------------------------
 st.title("🎯 Gereksinim & Kalite Analiz Asistanı")
-st.info("""
-**📖 Analiz Kapsamı ve Referans Standartlar:**
-
-Bu sistem, gereksinim metinlerini aşağıdaki uluslararası standartlar ve yerel mevzuatlar çerçevesinde denetleyerek, spesifik ifadeleri ilgili standart/prensip ile eşleştirir:
-
-* **IEEE 29148:** Yazılım ve Sistem Mühendisliği — Gereksinim Mühendisliği Standartları
-* **ISO/IEC 25010:** Yazılım Ürün Kalitesi ve Sistem Kalite Modelleri
-* **ISO/IEC 27001:** Bilgi Güvenliği Yönetim Sistemi Gereksinimleri
-* **KVKK:** 6698 Sayılı Kişisel Verilerin Korunması Kanunu
-""")
 
 yuklenen_dosya = st.file_uploader("Dosya seçin (.docx, .pdf)", type=["docx", "pdf"])
 metin_alani = st.text_area("Veya metni yapıştırın:", height=100)
@@ -131,29 +126,45 @@ if st.button("🚀 Analizi Başlat"):
     if not api_key or not girdi_metni.strip() or not secilen_model:
         st.warning("⚠️ Lütfen API anahtarını ve analiz edilecek metni kontrol edin.")
     else:
-        with st.spinner("Yapay zeka analiz ediyor..."):
-            try:
-                # Süre ölçümü başlangıcı
-                baslangic = time.time()
-                
-                model = genai.GenerativeModel(secilen_model)
-                sistem_talimati = "Sen uzman bir BT Uyum Denetçisisin. Yanıtlarını Türkçe ve tablolar halinde ver."
-                cevap = model.generate_content(f"{sistem_talimati}\n\nMETİN:\n{girdi_metni}")
-                
-                # Süre ölçümü bitişi
-                bitis = time.time()
-                gecen_sure = round(bitis - baslangic, 2)
-                
-                st.session_state['analiz_sonucu'] = cevap.text
-                st.session_state['skorlar'] = skor_hesapla(cevap.text, girdi_metni)
-                st.session_state['analiz_suresi'] = gecen_sure
-            except Exception as e:
-                st.error(f"Analiz sırasında hata: {e}")
+        # Eski sonuçları temizle
+        if 'analiz_sonucu' in st.session_state:
+            for key in ['analiz_sonucu', 'skorlar', 'analiz_suresi']:
+                if key in st.session_state: del st.session_state[key]
+        
+        try:
+            baslangic = time.time()
+            model = genai.GenerativeModel(secilen_model)
+            sistem_talimati = "Sen uzman bir BT Uyum Denetçisisin. Yanıtlarını SADECE Türkçe ve markdown tabloları halinde ver."
+            
+            # Streaming (Akış) başlatılıyor
+            response = model.generate_content(f"{sistem_talimati}\n\nMETİN:\n{girdi_metni}", stream=True)
+            
+            # Ekranda canlı yazdırma için jeneratör fonksiyonu
+            def stream_yazdir():
+                for chunk in response:
+                    yield chunk.text
 
-# Hafızada sonuç varsa göster
+            # Canlı çıktı alanı
+            full_text = st.write_stream(stream_yazdir())
+            
+            bitis = time.time()
+            gecen_sure = round(bitis - baslangic, 2)
+            
+            # Sonuçları hafızaya kaydet (PDF ve Skorlar için)
+            st.session_state['analiz_sonucu'] = full_text
+            st.session_state['skorlar'] = skor_hesapla(full_text, girdi_metni)
+            st.session_state['analiz_suresi'] = gecen_sure
+            
+            # Akış bittikten sonra sayfayı sonuçları sabitlemek için tetikle
+            st.rerun()
+
+        except Exception as e:
+            st.error(f"Analiz sırasında hata: {e}")
+
+# Hafızada sonuç varsa (akış bittikten sonra burası çalışır)
 if 'analiz_sonucu' in st.session_state:
-    sure_bilgisi = st.session_state.get('analiz_suresi', 0)
-    st.success(f"✅ Analiz {sure_bilgisi} saniyede tamamlandı!")
+    sure = st.session_state.get('analiz_suresi', 0)
+    st.success(f"✅ Analiz {sure} saniyede tamamlandı!")
     st.markdown(st.session_state['analiz_sonucu'])
     
     with st.expander("📊 Uyum Skoru Detayları", expanded=True):
@@ -164,8 +175,7 @@ if 'analiz_sonucu' in st.session_state:
     st.divider()
     pdf_bytes = pdf_olustur(st.session_state['analiz_sonucu'], st.session_state['skorlar'])
     b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
-    
-    pdf_link = f'<a href="data:application/pdf;base64,{b64_pdf}" target="_blank" style="text-decoration:none;"><button style="background-color:#ff4b4b; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer;">📄 Raporu Yeni Sekmede Aç / Yazdır</button></a>'
+    pdf_link = f'<a href="data:application/pdf;base64,{b64_pdf}" target="_blank"><button style="background-color:#ff4b4b; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer;">📄 Raporu Yeni Sekmede Aç / Yazdır</button></a>'
     
     col1, col2 = st.columns(2)
     with col1:
