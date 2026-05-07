@@ -272,7 +272,7 @@ if st.button("🚀 Analizi Başlat"):
             genai.configure(api_key=api_key.strip())
             model = genai.GenerativeModel(secilen_model)
 
-    sistem_talimati = """
+            sistem_talimati = """
 Sen uzman bir BT Uyum Denetçisi ve Gereksinim Mühendisliği Analistisin.
 Çıktılarını SADECE Türkçe üret.
 
