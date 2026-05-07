@@ -1,7 +1,4 @@
 import streamlit as st
-import markdown
-from xhtml2pdf import pisa
-import io
 import google.generativeai as genai
 import time
 from docx import Document
@@ -235,68 +232,6 @@ if st.button("🚀 Analizi Başlat"):
                         * **Sonuç:** 100 - (Risk Oranı x 100) = **% {skor['mevcut_skor']}**
                         """)
                 
-                # --- İŞTE YENİ EKLENECEK PDF KISMI ---
-                st.divider() # Araya ince bir çizgi çeker
-                
-                # PDF Dönüştürme Fonksiyonu (Sadece ihtiyaç olduğunda çalışır)
-                def pdf_olustur(ai_metni, skor_verisi):
-                    html_tablolar = markdown.markdown(ai_metni, extensions=['tables'])
-                    
-                    html_sablon = f"""
-                    <!DOCTYPE html>
-                    <html lang="tr">
-                    <head>
-                        <meta charset="UTF-8">
-                        <style>
-                            @page {{ size: a4 portrait; margin: 2cm; }}
-                            body {{ font-family: Helvetica, Arial, sans-serif; font-size: 12px; color: #333; }}
-                            h1 {{ color: #2C3E50; border-bottom: 1px solid #2C3E50; padding-bottom: 5px; }}
-                            .skor-kutusu {{ background-color: #f8f9fa; padding: 15px; border-left: 3px solid #28a745; margin-bottom: 20px; }}
-                            table {{ width: 100%; border-collapse: collapse; margin-top: 15px; }}
-                            th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-                            th {{ background-color: #2C3E50; color: white; font-weight: bold; }}
-                        </style>
-                    </head>
-                    <body>
-                        <h1>Gereksinim Analiz ve Kalite Raporu</h1>
-                        <div class="skor-kutusu">
-                            <h2>Genel Uyum Skoru: %{skor_verisi['mevcut_skor']}</h2>
-                            <p><strong>Taranan Madde:</strong> {skor_verisi['toplam_madde']} | 
-                               <strong>Uyumlu:</strong> {skor_verisi['basarili_madde']} | 
-                               <strong>Hatalı:</strong> {skor_verisi['toplam_hata']}</p>
-                            <p style="color:red; font-weight:bold;">
-                               (Kritik: {skor_verisi['kritik_hata']}, Yüksek: {skor_verisi['yuksek_hata']}, Orta: {skor_verisi['orta_hata']})
-                            </p>
-                        </div>
-                        <h2>Detaylı Analiz Tabloları</h2>
-                        {html_tablolar}
-                    </body>
-                    </html>
-                    """
-                    # HTML'i PDF bytes verisine çevir (xhtml2pdf ile)
-                    pdf_buffer = io.BytesIO()
-                    pisa_status = pisa.CreatePDF(html_sablon, dest=pdf_buffer)
-                    
-                    if pisa_status.err:
-                        raise Exception("PDF oluşturulurken teknik bir hata meydana geldi.")
-                        
-                    return pdf_buffer.getvalue()
-
-                # İndirme Butonu
-                try:
-                    with st.spinner("PDF Raporu Hazırlanıyor..."):
-                        pdf_verisi = pdf_olustur(cevap.text, skor)
-                        
-                    st.download_button(
-                        label="📄 Bu Raporu PDF Olarak İndir",
-                        data=pdf_verisi,
-                        file_name="Gereksinim_Analiz_Raporu.pdf",
-                        mime="application/pdf",
-                        type="primary" # Butonu mavi/vurgulu yapar
-                    )
-                except Exception as e:
-                    st.error(f"PDF oluşturulurken bir hata oluştu: {e}")
-                # --- PDF KISMI SONU ---
 
             else:
                 st.error("❌ Modelden yanıt alınamadı.")
