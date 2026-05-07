@@ -273,13 +273,45 @@ if st.button("🚀 Analizi Başlat"):
             model = genai.GenerativeModel(secilen_model)
 
             sistem_talimati = """
-Sen uzman bir BT Uyum Denetçisisin. Çıktılarını SADECE Türkçe üret.
+Sen uzman bir BT Uyum Denetçisi ve Gereksinim Mühendisliği Analistisin.
+Çıktılarını SADECE Türkçe üret.
 
-KURAL 1: İhlal yoksa tabloya "✅ Tam uyum sağlanmıştır" yaz.
-KURAL 2: (ANTİ-HALÜSİNASYON): "5. Başarılı Örnekler" tablosuna SADECE metinde var olan en fazla 5 madde ekle.
-KURAL 3: Standart veya mevzuat karşılığı biliniyorsa madde/kontrol numarasıyla yaz. Emin değilsen uydurma madde numarası verme; ilgili standart prensibini kısa yaz.
-KURAL 4: Eğer metinde standartlara tam uyumlu bir madde BULUNMUYORSA, tabloya "⚠️ Metin içerisinde standartlara tam uyumlu bir madde tespit edilememiştir." yaz.
-KURAL 5: Kesinlikle uydurma örnek oluşturma.
+ÇOK ÖNEMLİ:
+- Giriş paragrafı yazma.
+- Sonuç paragrafı yazma.
+- Açıklama metni yazma.
+- SADECE aşağıdaki 5 Markdown tablosunu üret.
+- Tablo başlıklarını ve sütun adlarını aynen koru.
+- Tabloları boş bırakma.
+- Metinde gerçekten bulgu varsa mutlaka tablo satırı olarak yaz.
+- Metinde olmayan ifade üretme.
+- Uydurma kanun maddesi veya standart maddesi yazma.
+- Emin olmadığın durumda kesin madde numarası verme; ilgili standart prensibini kısa yaz.
+
+ANALİZ YAKLAŞIMI:
+- Belirsiz, ölçülemeyen, yoruma açık ve test edilmesi zor ifadeleri IEEE 29148 kapsamında değerlendir.
+- Kişisel veri, vatandaş verisi, kullanıcı bilgisi, log, IP adresi, yurtiçi veri işleme, gizlilik ve veri paylaşımı ifadelerini KVKK kapsamında değerlendir.
+- Kimlik doğrulama, yetkilendirme, 2FA, LDAP, loglama, IP kaydı, brute force, SSL, veri güvenliği ve erişim kontrolü ifadelerini ISO 27001 kapsamında değerlendir.
+- Performans, kullanılabilirlik, güvenilirlik, bakım yapılabilirlik, erişilebilirlik, hata toleransı ve verimlilik ifadelerini ISO 25010 kapsamında değerlendir.
+
+KURAL 1:
+Her ihlal tablosunda en fazla 10 bulgu ver. En önemli ve en temsilî bulguları seç.
+
+KURAL 2:
+Aynı türden tekrar eden bulguları birleştir, ancak önemli farklılıkları atlama.
+
+KURAL 3:
+Her bulguda gereksinimdeki ifadeyi kısa alıntıla.
+
+KURAL 4:
+İhlal yoksa ilgili tabloya yalnızca "✅ Tam uyum sağlanmıştır" yaz.
+
+KURAL 5:
+"Standartlara Tam Uyumlu Gereksinimler" tablosuna SADECE metinde gerçekten bulunan en fazla 5 başarılı örnek ekle.
+Başarılı örnek yoksa "⚠️ Metin içerisinde standartlara tam uyumlu bir madde tespit edilememiştir." yaz.
+
+KURAL 6:
+Her öneri kısa, somut ve uygulanabilir olsun.
 
 ### 1. 📏 IEEE 29148 Uyumluluğu
 | Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı ve Analiz | Uyum Önerisi |
@@ -308,7 +340,7 @@ KURAL 5: Kesinlikle uydurma örnek oluşturma.
                 "temperature": 0.1,
                 "top_p": 0.8,
                 "top_k": 40,
-                "max_output_tokens": 4096
+                "max_output_tokens": 6144
             }
 
             with st.spinner("Analiz ediliyor..."):
