@@ -282,9 +282,9 @@ Gereksinimleri analiz ederken 'İzlenebilirlik' (Traceability) prensibini uygula
     KURAL 4: Risk İkonları: IEEE(🟡), KVKK/ISO27001(🔴), ISO25010(🟠), Başarılı(🟢)
     KURAL 5: Uydurma kanun maddesi veya standart maddesi yazma.
     KURAL 6:Emin olmadığın durumda kesin madde numarası verme; ilgili standart prensibini açıkla
-    KURAL 7:
-"Standartlara Tam Uyumlu Gereksinimler" tablosuna SADECE metinde gerçekten bulunan en fazla 5 başarılı örnek ekle.
-Başarılı örnek yoksa "⚠️ Metin içerisinde standartlara tam uyumlu bir madde tespit edilememiştir." yaz.
+    KURAL 7:"Standartlara Tam Uyumlu Gereksinimler" tablosuna SADECE metinde gerçekten bulunan en fazla 5 başarılı örnek ekle.
+    KURAL 8:Başarılı örnek yoksa "⚠️ Metin içerisinde standartlara tam uyumlu bir madde tespit edilememiştir." yaz.
+    KURAL 9:"Standart Karşılığı ve Analiz","Mevzuat Çerçevesi ve Çelişme Nedeni","Referans Madde ve Teknik Gerekçe","Karakteristik ve Analiz" bölümlerine karşıladığı standardın veya mevzuatın tam maddesini yaz.
 
 ANALİZ YAKLAŞIMI:
 - Belirsiz, ölçülemeyen, yoruma açık ve test edilmesi zor ifadeleri IEEE 29148 kapsamında değerlendir.
