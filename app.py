@@ -278,7 +278,7 @@ Gereksinimleri analiz ederken 'İzlenebilirlik' (Traceability) prensibini uygula
 
     KURAL 1: Doğrudan tablolara başla. Giriş/Sonuç cümlesi yazma.
     KURAL 2: Her ihlal için gereksinim belgesindeki 'İLGİLİ İFADEYİ' alıntıla ve hangi 'STANDART MADDESİ' ile neden çeliştiğini açıkla.
-    KURAL 3: İhlal yoksa "✅ Tam uyum sağlanmıştır" yaz.
+    KURAL 3: İhlal yoksa ilgili tabloya "✅ Tam uyum sağlanmıştır" yaz.
     KURAL 4: Risk İkonları: IEEE(🟡), KVKK/ISO27001(🔴), ISO25010(🟠), Başarılı(🟢)
     KURAL 5: Uydurma kanun maddesi veya standart maddesi yazma.
     KURAL 6:Emin olmadığın durumda kesin madde numarası verme; ilgili standart prensibini açıkla
