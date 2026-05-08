@@ -70,7 +70,6 @@ def sure_formatla(saniye):
 if st.button("🚀 Analizi Başlat"):
     analiz_metni = dosya_oku(yuklenen_dosya) if yuklenen_dosya else metin_alani
 
-    # secilen_model de dolu mu diye kontrol ediyoruz
     if not api_key or not secilen_model or not analiz_metni:
         st.warning("⚠️ Lütfen API anahtarını girin, geçerli bir model seçin ve analiz edilecek metni sağlayın.")
     else:
@@ -79,35 +78,20 @@ if st.button("🚀 Analizi Başlat"):
             
             # --- PROMPT MÜHENDİSLİĞİ ---
             sistem_talimati = """
-Sen uzman bir Yazılım Kalite Direktörü ve BT Uyum Denetçisisin.
-Gereksinimleri analiz ederken 'İzlenebilirlik' (Traceability) prensibini uygula.
+            Sen uzman bir Yazılım Kalite Direktörü ve BT Uyum Denetçisisin.
+            Gereksinimleri analiz ederken 'İzlenebilirlik' (Traceability) prensibini uygula.
+            KURAL 1: Doğrudan tablolara başla. Giriş/Sonuç cümlesi yazma.
+            KURAL 2: Her ihlal için gereksinim belgesindeki 'İLGİLİ İFADEYİ' alıntıla ve hangi 'STANDART MADDESİ' ile neden çeliştiğini açıkla.
+            KURAL 3: İhlal yoksa "✅ Tam uyum sağlanmıştır" yaz.
+            KURAL 4: Risk İkonları: IEEE(🟡), KVKK/ISO27001(🔴), ISO25010(🟠), Başarılı(🟢).
+            KURAL 5: Tablo 5 (Başarılı Örnekler) kısmına en az 5 adet en iyi pratik örneğini ekle.
 
-KURAL 1: Doğrudan tablolara başla. Giriş/Sonuç cümlesi yazma.
-KURAL 2: Her ihlal için gereksinim belgesindeki 'İLGİLİ İFADEYİ' alıntıla ve hangi 'STANDART MADDESİ' ile neden çeliştiğini açıkla.
-KURAL 3: İhlal yoksa "✅ Tam uyum sağlanmıştır" yaz.
-KURAL 4: Risk İkonları: IEEE(🟡), KVKK/ISO27001(🔴), ISO25010(🟠), Başarılı(🟢).
-KURAL 5 (ÖNEMLİ): Tablo 5 (Başarılı Örnekler) kısmına metindeki tüm maddeler arasından en az 5, en fazla 10 adet en iyi pratik (best practice) örneğini KESİNLİKLE ekle. Özet geçme.
-
-### 1. 📏 IEEE 29148 Gereksinim Kalitesi Uyumluluğu
-| Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı ve Analiz | Uyum Önerisi |
-|---|---|---|---|
-
-### 2. 🛡️ KVKK ve Veri Gizliliği Mevzuatı Uyumluluğu
-| Gereksinimdeki İfade | KVKK Riski | Mevzuat Maddesi ve Çelişme Nedeni | Hukuki Uyum Şartı |
-|---|---|---|---|
-
-### 3. 🔒 ISO 27001 Bilgi Güvenliği Uyumluluğu
-| Gereksinimdeki İfade | Güvenlik Zafiyeti | Referans Madde ve Teknik Gerekçe | Teknik Önlem |
-|---|---|---|---|
-
-### 4. ⚙️ ISO 25010 Yazılım Kalite Modeli Uyumluluğu
-| Gereksinimdeki İfade | Kalite Eksikliği | Karakteristik ve Analiz | Kalite Hedefi |
-|---|---|---|---|
-
-### 5. 🌟 Standartlara Tam Uyumlu Gereksinimler
-| Başarılı Gereksinim | Karşıladığı Standartlar | Uyum Gerekçesi (Neden Başarılı?) |
-|---|---|---|
-"""
+            ### 1. 📏 IEEE 29148 Uyumluluğu
+            ### 2. 🛡️ KVKK Uyumluluğu
+            ### 3. 🔒 ISO 27001 Uyumluluğu
+            ### 4. ⚙️ ISO 25010 Uyumluluğu
+            ### 5. 🌟 Başarılı Gereksinimler
+            """
             
             with st.spinner("Yapay Zeka İzlenebilirlik Analizini Gerçekleştiriyor..."):
                 baslangic_zamani = time.time()
@@ -115,75 +99,45 @@ KURAL 5 (ÖNEMLİ): Tablo 5 (Başarılı Örnekler) kısmına metindeki tüm mad
                 bitis_zamani = time.time()
 
             gecen_sure = round(bitis_zamani - baslangic_zamani, 2)
-            gecen_sure_yazi = sure_formatla(gecen_sure)
-
-            st.success(f"✅ Kapsamlı Uyumluluk Analizi Tamamlanmıştır! Süre: {gecen_sure_yazi}")
-
-            st.metric(label="⏱️ Analiz Süresi", value=gecen_sure_yazi)
+            st.success(f"✅ Analiz Tamamlandı! Süre: {sure_formatla(gecen_sure)}")
+            
+            st.metric(label="⏱️ Analiz Süresi", value=sure_formatla(gecen_sure))
             st.markdown(cevap.text)
             
-            # --- 6. PROFESYONEL ORANSAL SKORLAMA (Hata Yoğunluğu Temelli) ---
-with st.expander("📊 Doküman Uyum Skoru (ISTQB Risk & Yoğunluk Analizi)", expanded=True):
-    satirlar = cevap.text.split('\n')
-    kritik_hata, yuksek_hata, orta_hata = 0, 0, 0
-    aktif_tablo = 0
-    
-    for satir in satirlar:
-        if "IEEE 29148" in satir: aktif_tablo = 1
-        elif "KVKK" in satir: aktif_tablo = 2
-        elif "ISO 27001" in satir: aktif_tablo = 3
-        elif "ISO 25010" in satir: aktif_tablo = 4
-        elif "Standartlara Tam Uyumlu" in satir: aktif_tablo = 5
-        
-        if "|" in satir and "---" not in satir and "İfade" not in satir and "✅" not in satir and aktif_tablo != 5:
-            if aktif_tablo in [2, 3]: kritik_hata += 1
-            elif aktif_tablo == 4: yuksek_hata += 1
-            elif aktif_tablo == 1: orta_hata += 1
-    
-    # 1. Toplam madde sayısını bul
-    toplam_madde = len([s for s in analiz_metni.split('\n') if len(s.strip()) > 15])
-    if toplam_madde == 0: toplam_madde = 1 # Division by zero hatası için önlem
-    
-    # 2. Ceza hesaplama (Ağırlıklar)
-    toplam_ceza = (kritik_hata * 10) + (yuksek_hata * 6) + (orta_hata * 3)
-    
-    # 3. MAKSİMUM CEZA POTANSİYELİ (Her madde kritik hata olsaydı)
-    # Kritik hata ağırlığı (10) üzerinden döküman hacmine göre normalize ediyoruz
-    max_potansiyel_ceza = toplam_madde * 10
-    
-    # 4. YENİ FORMÜL: Oransal Başarı
-    # Ceza puanını toplam potansiyele bölüp 100'den çıkarıyoruz
-    mevcut_skor = round(max(0, (1 - (toplam_ceza / max_potansiyel_ceza)) * 100), 1)
-    
-    toplam_hata = kritik_hata + yuksek_hata + orta_hata
-    hatasiz_madde = max(0, toplam_madde - toplam_hata)
-    
-    st.info(f"📊 **Yönetici Özeti:** Döküman hacmi **{toplam_madde}** birim/madde olarak analiz edildi. Tespit edilen hata yoğunluğu döküman boyutuna oranlanarak skorlanmıştır.")
-    
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Gereksinim Kalite Endeksi", f"% {mevcut_skor}", f"-{toplam_ceza} Risk Puanı", delta_color="inverse")
-    with col2:
-        st.write(f"**🔴 {kritik_hata}** Kritik | **🟠 {yuksek_hata}** Yüksek | **🟡 {orta_hata}** Orta")
-    with col3:
-        # Hata Yoğunluğu (Hata / Toplam Madde)
-        hata_yogunlugu = round((toplam_hata / toplam_madde), 2)
-        st.metric("Hata Yoğunluğu", f"{hata_yogunlugu}", "Hata / Madde")
-
-    st.divider()
-    
-    with st.expander("🧮 Analiz Metodolojisi (Neden Bu Puan?)"):
-        st.markdown(f"""
-**Bu skor sadece hataları toplamaz, dökümanın büyüklüğünü dikkate alır:**
-
-1. **Toplam Ceza:** Kritik(x10), Yüksek(x6) ve Orta(x3) risklerin toplamı = **{toplam_ceza} Puan**.
-2. **Kapasite Bazlı Risk:** Döküman {toplam_madde} maddeden oluştuğu için 'Maksimum Risk Barajı' **{max_potansiyel_ceza}** olarak belirlendi.
-3. **Kalite Skoru Hesaplaması:** 
-   - `Hata Oranı = {toplam_ceza} / {max_potansiyel_ceza} = %{round((toplam_ceza/max_potansiyel_ceza)*100, 1)}`
-   - `Kalite Skoru = 100 - Hata Oranı = %{mevcut_skor}`
-
-*Bu yaklaşım, döküman büyüdükçe birkaç küçük hatanın skoru çok fazla düşürmesini engeller ve daha adil bir kalite karnesi sunar.*
-        """)
+            # --- 6. PROFESYONEL ORANSAL SKORLAMA ---
+            # DİKKAT: Bu blok 'try' içerisinde, st.markdown'ın hemen altında olmalı!
+            with st.expander("📊 Doküman Uyum Skoru (ISTQB Risk & Yoğunluk Analizi)", expanded=True):
+                satirlar = cevap.text.split('\n')
+                kritik_hata, yuksek_hata, orta_hata = 0, 0, 0
+                aktif_tablo = 0
+                
+                for satir in satirlar:
+                    if "IEEE 29148" in satir: aktif_tablo = 1
+                    elif "KVKK" in satir: aktif_tablo = 2
+                    elif "ISO 27001" in satir: aktif_tablo = 3
+                    elif "ISO 25010" in satir: aktif_tablo = 4
+                    elif "Başarılı" in satir: aktif_tablo = 5
+                    
+                    if "|" in satir and "---" not in satir and "İfade" not in satir and "✅" not in satir and aktif_tablo != 5:
+                        if aktif_tablo in [2, 3]: kritik_hata += 1
+                        elif aktif_tablo == 4: yuksek_hata += 1
+                        elif aktif_tablo == 1: orta_hata += 1
+                
+                toplam_madde = len([s for s in analiz_metni.split('\n') if len(s.strip()) > 15])
+                toplam_madde = max(1, toplam_madde) # 0'a bölünme hatası engeli
+                
+                toplam_ceza = (kritik_hata * 10) + (yuksek_hata * 6) + (orta_hata * 3)
+                max_potansiyel = toplam_madde * 10
+                mevcut_skor = round(max(0, (1 - (toplam_ceza / max_potansiyel)) * 100), 1)
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Kalite Endeksi", f"% {mevcut_skor}", f"-{toplam_ceza} Risk Puanı", delta_color="inverse")
+                with col2:
+                    st.write(f"**🔴 {kritik_hata}** Kritik | **🟠 {yuksek_hata}** Yüksek | **🟡 {orta_hata}** Orta")
+                with col3:
+                    hata_yogunlugu = round(((kritik_hata + yuksek_hata + orta_hata) / toplam_madde), 2)
+                    st.metric("Hata Yoğunluğu", f"{hata_yogunlugu}", "Hata / Madde")
 
         except Exception as e:
-            st.error(f"❌ Analiz Hatası oluştu. Lütfen tekrar deneyin. Detay: {e}")
+            st.error(f"❌ Analiz Hatası: {e}")
