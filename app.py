@@ -122,51 +122,68 @@ KURAL 5 (ÖNEMLİ): Tablo 5 (Başarılı Örnekler) kısmına metindeki tüm mad
             st.metric(label="⏱️ Analiz Süresi", value=gecen_sure_yazi)
             st.markdown(cevap.text)
             
-            # --- 6. GÜNCELLENMİŞ POZİTİF SKORLAMA ALGORİTMASI ---
-            with st.expander("📊 Doküman Uyum Skoru (ISTQB Risk Temelli Analiz)", expanded=True):
-                satirlar = cevap.text.split('\n')
-                kritik_hata, yuksek_hata, orta_hata = 0, 0, 0
-                aktif_tablo = 0
-                
-                for satir in satirlar:
-                    if "IEEE 29148" in satir: aktif_tablo = 1
-                    elif "KVKK" in satir: aktif_tablo = 2
-                    elif "ISO 27001" in satir: aktif_tablo = 3
-                    elif "ISO 25010" in satir: aktif_tablo = 4
-                    elif "Standartlara Tam Uyumlu" in satir: aktif_tablo = 5
-                    
-                    if "|" in satir and "---" not in satir and "İfade" not in satir and "✅" not in satir and aktif_tablo != 5:
-                        if aktif_tablo in [2, 3]: kritik_hata += 1
-                        elif aktif_tablo == 4: yuksek_hata += 1
-                        elif aktif_tablo == 1: orta_hata += 1
-                
-                toplam_ceza = (kritik_hata * 10) + (yuksek_hata * 6) + (orta_hata * 3)
-                mevcut_skor = max(0, 100 - toplam_ceza)
-                
-                toplam_madde = len([s for s in analiz_metni.split('\n') if len(s.strip()) > 15])
-                toplam_hata = kritik_hata + yuksek_hata + orta_hata
-                hatasiz_madde = max(0, toplam_madde - toplam_hata)
-                
-                st.info(f"📊 **Yönetici Özeti:** İnceleme sonucunda döküman içerisindeki **{toplam_madde}** madde taranmıştır. Sistem; **{hatasiz_madde}** maddeyi standartlara tam uyumlu bulurken, **{toplam_hata}** maddede gelişim alanı tespit etmiştir.")
-                
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.metric("Güncel Uyum Skoru", f"% {mevcut_skor}", f"-{toplam_ceza} Puan", delta_color="inverse")
-                with col2:
-                    st.write(f"**🔴 {kritik_hata}** Kritik | **🟠 {yuksek_hata}** Yüksek | **🟡 {orta_hata}** Orta")
-                with col3:
-                    st.metric("Hedeflenen Durum", "% 100", f"+{toplam_ceza} Gelişim")
-                
-                st.divider()
+            # --- 6. PROFESYONEL ORANSAL SKORLAMA (Hata Yoğunluğu Temelli) ---
+with st.expander("📊 Doküman Uyum Skoru (ISTQB Risk & Yoğunluk Analizi)", expanded=True):
+    satirlar = cevap.text.split('\n')
+    kritik_hata, yuksek_hata, orta_hata = 0, 0, 0
+    aktif_tablo = 0
+    
+    for satir in satirlar:
+        if "IEEE 29148" in satir: aktif_tablo = 1
+        elif "KVKK" in satir: aktif_tablo = 2
+        elif "ISO 27001" in satir: aktif_tablo = 3
+        elif "ISO 25010" in satir: aktif_tablo = 4
+        elif "Standartlara Tam Uyumlu" in satir: aktif_tablo = 5
+        
+        if "|" in satir and "---" not in satir and "İfade" not in satir and "✅" not in satir and aktif_tablo != 5:
+            if aktif_tablo in [2, 3]: kritik_hata += 1
+            elif aktif_tablo == 4: yuksek_hata += 1
+            elif aktif_tablo == 1: orta_hata += 1
+    
+    # 1. Toplam madde sayısını bul
+    toplam_madde = len([s for s in analiz_metni.split('\n') if len(s.strip()) > 15])
+    if toplam_madde == 0: toplam_madde = 1 # Division by zero hatası için önlem
+    
+    # 2. Ceza hesaplama (Ağırlıklar)
+    toplam_ceza = (kritik_hata * 10) + (yuksek_hata * 6) + (orta_hata * 3)
+    
+    # 3. MAKSİMUM CEZA POTANSİYELİ (Her madde kritik hata olsaydı)
+    # Kritik hata ağırlığı (10) üzerinden döküman hacmine göre normalize ediyoruz
+    max_potansiyel_ceza = toplam_madde * 10
+    
+    # 4. YENİ FORMÜL: Oransal Başarı
+    # Ceza puanını toplam potansiyele bölüp 100'den çıkarıyoruz
+    mevcut_skor = round(max(0, (1 - (toplam_ceza / max_potansiyel_ceza)) * 100), 1)
+    
+    toplam_hata = kritik_hata + yuksek_hata + orta_hata
+    hatasiz_madde = max(0, toplam_madde - toplam_hata)
+    
+    st.info(f"📊 **Yönetici Özeti:** Döküman hacmi **{toplam_madde}** birim/madde olarak analiz edildi. Tespit edilen hata yoğunluğu döküman boyutuna oranlanarak skorlanmıştır.")
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Gereksinim Kalite Endeksi", f"% {mevcut_skor}", f"-{toplam_ceza} Risk Puanı", delta_color="inverse")
+    with col2:
+        st.write(f"**🔴 {kritik_hata}** Kritik | **🟠 {yuksek_hata}** Yüksek | **🟡 {orta_hata}** Orta")
+    with col3:
+        # Hata Yoğunluğu (Hata / Toplam Madde)
+        hata_yogunlugu = round((toplam_hata / toplam_madde), 2)
+        st.metric("Hata Yoğunluğu", f"{hata_yogunlugu}", "Hata / Madde")
 
-                with st.expander("🧮 Puanlama Nasıl Hesaplanıyor?"):
-                    st.markdown(f"""
-**Toplam Ceza Puanı:** {kritik_hata * 10} + {yuksek_hata * 6} + {orta_hata * 3} = **{toplam_ceza}**
+    st.divider()
+    
+    with st.expander("🧮 Analiz Metodolojisi (Neden Bu Puan?)"):
+        st.markdown(f"""
+**Bu skor sadece hataları toplamaz, dökümanın büyüklüğünü dikkate alır:**
 
-**Uyum Skoru:** 100 - {toplam_ceza} = **%{mevcut_skor}**
-                    """)
+1. **Toplam Ceza:** Kritik(x10), Yüksek(x6) ve Orta(x3) risklerin toplamı = **{toplam_ceza} Puan**.
+2. **Kapasite Bazlı Risk:** Döküman {toplam_madde} maddeden oluştuğu için 'Maksimum Risk Barajı' **{max_potansiyel_ceza}** olarak belirlendi.
+3. **Kalite Skoru Hesaplaması:** 
+   - `Hata Oranı = {toplam_ceza} / {max_potansiyel_ceza} = %{round((toplam_ceza/max_potansiyel_ceza)*100, 1)}`
+   - `Kalite Skoru = 100 - Hata Oranı = %{mevcut_skor}`
 
-                st.caption("💡 **Mühendislik Notu:** Bu rapor ISTQB Risk Temelli Analiz prensiplerine göre oluşturulmuştur.")
+*Bu yaklaşım, döküman büyüdükçe birkaç küçük hatanın skoru çok fazla düşürmesini engeller ve daha adil bir kalite karnesi sunar.*
+        """)
 
         except Exception as e:
             st.error(f"❌ Analiz Hatası oluştu. Lütfen tekrar deneyin. Detay: {e}")
