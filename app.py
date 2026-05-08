@@ -77,19 +77,19 @@ if st.button("🚀 Analizi Başlat"):
             |---|---|---|---|
             """
             
-with st.spinner("Analiz ediliyor..."):
-    baslangic = time.time()
-    cevap = model.generate_content(f"{sistem_talimati}\n\nMETİN:\n{analiz_metni}")
-    gecen_sure = round(time.time() - baslangic, 2)
+            with st.spinner("Analiz ediliyor..."):
+            baslangic = time.time()
+            cevap = model.generate_content(f"{sistem_talimati}\n\nMETİN:\n{analiz_metni}")
+            gecen_sure = round(time.time() - baslangic, 2)
 
-st.success(f"✅ Analiz tamamlandı. Süre: {gecen_sure} saniye")
+            st.success(f"✅ Analiz tamamlandı. Süre: {gecen_sure} saniye")
 
-st.metric(
-    label="⏱️ Analiz Süresi",
-    value=f"{gecen_sure} sn"
-)
+            st.metric(
+            label="⏱️ Analiz Süresi",
+            value=f"{gecen_sure} sn"
+            )
 
-st.markdown(cevap.text)
+            st.markdown(cevap.text)
             
             # --- 6. GERÇEK VERİLERLE MATEMATİKSEL HESAPLAMA ---
             with st.expander("📊 Doküman Uyum Skoru ve Detaylı Hesaplama", expanded=True):
