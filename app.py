@@ -287,6 +287,9 @@ KURAL 6: İhlal yoksa ilgili tabloya sadece "✅ Tam uyum sağlanmıştır" yaz.
 KURAL 7: Risk ikonları: IEEE(🟡), KVKK/ISO27001(🔴), ISO25010(🟠), Başarılı(🟢).
 KURAL 8: "Standartlara Tam Uyumlu Gereksinimler" tablosuna SADECE metinde gerçekten bulunan en fazla 5 başarılı örnek ekle.
 KURAL 9: Başarılı örnek yoksa "⚠️ Metin içerisinde standartlara tam uyumlu bir madde tespit edilememiştir." yaz.
+KURAL 10: Çıktıda 1, 2, 3, 4 ve 5 numaralı tabloların tamamı MUTLAKA yer almalıdır. 
+Bir standart için ihlal veya bulgu yoksa o tablonun altına tek satır olarak "✅ Tam uyum sağlanmıştır" yaz.
+Hiçbir tabloyu boş bırakma ve hiçbir tablo başlığını atlama.
 
 STANDART / MEVZUAT KARŞILIĞI YAZMA KURALI:
 Aşağıdaki sütunlarda yalnızca kısa madde adı yazıp bırakma:
