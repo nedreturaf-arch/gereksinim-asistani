@@ -2,6 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 from docx import Document
 import PyPDF2
+import time
 
 # --- 1. SAYFA VE ARAYÜZ YAPILANDIRMASI ---
 st.set_page_config(page_title="Gereksinim Analiz Asistanı v3.6", layout="wide")
@@ -55,6 +56,15 @@ def dosya_oku(dosya):
         return ""
     return ""
 
+def sure_formatla(saniye):
+    dakika = int(saniye // 60)
+    kalan_saniye = round(saniye % 60, 2)
+
+    if dakika > 0:
+        return f"{dakika} dk {kalan_saniye} sn"
+
+    return f"{kalan_saniye} sn"
+
 # --- 5. YAPAY ZEKA ANALİZ SÜRECİ ---
 if st.button("🚀 Analizi Başlat"):
     analiz_metni = dosya_oku(yuklenen_dosya) if yuklenen_dosya else metin_alani
@@ -97,11 +107,26 @@ if st.button("🚀 Analizi Başlat"):
             |---|---|---|
             """
             
-            with st.spinner("Yapay Zeka İzlenebilirlik Analizini Gerçekleştiriyor..."):
-                cevap = model.generate_content(f"{sistem_talimati}\n\nAnaliz edilecek metin:\n{analiz_metni}")
-            
-            st.success("✅ Kapsamlı Uyumluluk Analizi Tamamlanmıştır!")
-            st.markdown(cevap.text)
+with st.spinner("Yapay Zeka İzlenebilirlik Analizini Gerçekleştiriyor..."):
+    baslangic_zamani = time.time()
+
+    cevap = model.generate_content(
+        f"{sistem_talimati}\n\nAnaliz edilecek metin:\n{analiz_metni}"
+    )
+
+    bitis_zamani = time.time()
+
+gecen_sure = round(bitis_zamani - baslangic_zamani, 2)
+gecen_sure_yazi = sure_formatla(gecen_sure)
+
+st.success(f"✅ Kapsamlı Uyumluluk Analizi Tamamlanmıştır! Süre: {gecen_sure_yazi}")
+
+st.metric(
+    label="⏱️ Analiz Süresi",
+    value=gecen_sure_yazi
+)
+
+st.markdown(cevap.text)
             
             # --- 6. GÜNCELLENMİŞ POZİTİF SKORLAMA ALGORİTMASI ---
             with st.expander("📊 Doküman Uyum Skoru (ISTQB Risk Temelli Analiz)", expanded=True):
@@ -144,6 +169,67 @@ if st.button("🚀 Analizi Başlat"):
                     st.metric("Hedeflenen Durum", "% 100", f"+{toplam_ceza} Gelişim")
                 
                 st.divider()
+
+                with st.expander("🧮 Puanlama Nasıl Hesaplanıyor? (Matematiksel Döküm)"):
+                    st.markdown(f"""
+**1. Risk Seviyelerine Göre Hata Sayıları**
+
+* **Kritik Hata:** {kritik_hata} adet  
+  *KVKK ve ISO 27001 kapsamındaki bulgular kritik risk olarak değerlendirilmiştir.*
+
+* **Yüksek Hata:** {yuksek_hata} adet  
+  *ISO 25010 kapsamındaki kalite eksiklikleri yüksek risk olarak değerlendirilmiştir.*
+
+* **Orta Hata:** {orta_hata} adet  
+  *IEEE 29148 kapsamındaki gereksinim belirsizlikleri orta risk olarak değerlendirilmiştir.*
+
+---
+
+**2. Risk Ağırlıkları**
+
+* Kritik hata ağırlığı: **10 puan**
+* Yüksek hata ağırlığı: **6 puan**
+* Orta hata ağırlığı: **3 puan**
+
+---
+
+**3. Toplam Ceza Puanı Hesabı**
+
+* Kritik ceza: {kritik_hata} × 10 = **{kritik_hata * 10}**
+* Yüksek ceza: {yuksek_hata} × 6 = **{yuksek_hata * 6}**
+* Orta ceza: {orta_hata} × 3 = **{orta_hata * 3}**
+
+**Toplam Ceza Puanı:**  
+{kritik_hata * 10} + {yuksek_hata * 6} + {orta_hata * 3} = **{toplam_ceza}**
+
+---
+
+**4. Uyum Skoru Hesabı**
+
+Başlangıç skoru **100** kabul edilmiştir.  
+Toplam ceza puanı bu değerden düşülmüştür.
+
+**Formül:**
+
+`Uyum Skoru = 100 - Toplam Ceza Puanı`
+
+**Uygulama:**
+
+`Uyum Skoru = 100 - {toplam_ceza}`
+
+**Sonuç:**
+
+**Uyum Skoru = %{mevcut_skor}**
+
+---
+
+**5. Madde Bazlı Özet**
+
+* Toplam taranan madde: **{toplam_madde}**
+* Hatalı / gelişime açık madde: **{toplam_hata}**
+* Hatasız kabul edilen madde: **{hatasiz_madde}**
+""")
+
                 st.caption("💡 **Mühendislik Notu:** Bu rapor ISTQB Risk Temelli Analiz prensiplerine göre oluşturulmuştur. Başarılı maddelerin tamamı döküman boyutuna göre örneklenerek sunulmaktadır.")
 
         except Exception as e:
