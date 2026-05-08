@@ -25,9 +25,13 @@ with st.sidebar:
 st.title("🎯 Gereksinim & Kalite Analiz Asistanı")
 st.info("**Referanslar:** IEEE 29148, ISO 25010, ISO 27001, KVKK")
 
-# --- 4. VERİ GİRİŞİ ---
-yuklenen_dosya = st.file_uploader("Dosya seçin (.docx, .pdf)", type=["docx", "pdf"])
-metin_alani = st.text_area("Veya metni buraya yapıştırın:", height=150)
+# --- 4. YARDIMCI FONKSİYONLAR ---
+def sure_formatla(saniye):
+    if saniye < 60:
+        return f"{round(saniye, 2)} sn"
+    dakika = int(saniye // 60)
+    kalan_saniye = round(saniye % 60, 2)
+    return f"{dakika} dk {kalan_saniye} sn"
 
 def dosya_oku(dosya):
     try:
@@ -39,7 +43,11 @@ def dosya_oku(dosya):
     except: return ""
     return ""
 
-# --- 5. ANALİZ SÜRECİ ---
+# --- 5. VERİ GİRİŞİ ---
+yuklenen_dosya = st.file_uploader("Dosya seçin (.docx, .pdf)", type=["docx", "pdf"])
+metin_alani = st.text_area("Veya metni buraya yapıştırın:", height=150)
+
+# --- 6. ANALİZ SÜRECİ ---
 if st.button("🚀 Analizi Başlat"):
     analiz_metni = dosya_oku(yuklenen_dosya) if yuklenen_dosya else metin_alani
 
@@ -49,13 +57,12 @@ if st.button("🚀 Analizi Başlat"):
         try:
             model = genai.GenerativeModel(secilen_model)
             
-            # --- PROMPT: İkonlar ve Tablo Yapısı Zorunlu Tutuldu ---
             sistem_talimati = """
             Uzman bir denetçi olarak analiz yap. Sadece Markdown tabloları kullan.
             
             KRİTİK KURALLAR:
             1. IEEE 29148 tablosundaki her hata satırı 🟡 ile başlamalı.
-            2. KVKK ve ISO 27001 tablolarındaki her hata satırı 🔴 ile başlamalı.
+            2. KVKK ve ISO 27001 tablosundaki her hata satırı 🔴 ile başlamalı.
             3. ISO 25010 tablosundaki her hata satırı 🟠 ile başlamalı.
             4. Başarılı örnekler 🟢 ile başlamalı.
             5. İhlal yoksa sadece "✅ Tam uyum sağlanmıştır" yaz.
@@ -77,15 +84,23 @@ if st.button("🚀 Analizi Başlat"):
             |---|---|---|---|
             """
             
-            with st.spinner("Analiz ediliyor..."):
-                baslangic = time.time()
+            baslangic_zamani = time.time() # Zaman ölçümü başlar
+            
+            with st.spinner("Yapay Zeka İzlenebilirlik Analizini Gerçekleştiriyor..."):
                 cevap = model.generate_content(f"{sistem_talimati}\n\nMETİN:\n{analiz_metni}")
-                gecen_sure = round(time.time() - baslangic, 2)
+                
+            bitis_zamani = time.time() # Zaman ölçümü biter
+            gecen_sure = round(bitis_zamani - baslangic_zamani, 2)
+            sure_metni = sure_formatla(gecen_sure)
+
+            # Başarı mesajı ve Metrik
+            st.success(f"✅ Kapsamlı Uyumluluk Analizi Tamamlanmıştır! Süre: {sure_metni}")
+            st.metric(label="⏱️ Analiz Süresi", value=sure_metni)
 
             st.markdown(cevap.text)
             
-            # --- 6. GERÇEK VERİLERLE MATEMATİKSEL HESAPLAMA ---
-            with st.expander("📊 Doküman Uyum Skoru ve Detaylı Hesaplama", expanded=True):
+            # --- 7. GERÇEK VERİLERLE HESAPLAMA VE ÖZET ---
+            with st.expander("📊 Doküman Uyum Skoru (ISTQB Risk Temelli Analiz)", expanded=True):
                 satirlar = cevap.text.split('\n')
                 kritik, yuksek, orta = 0, 0, 0
                 
@@ -96,7 +111,7 @@ if st.button("🚀 Analizi Başlat"):
 
                 # Dinamik Madde Sayımı
                 toplam_madde = len([m for m in analiz_metni.split('\n') if len(m.strip()) > 20])
-                toplam_madde = max(toplam_madde, (kritik + yuksek + orta + 5)) # Güvenlik önlemi
+                toplam_madde = max(toplam_madde, (kritik + yuksek + orta + 5))
                 
                 toplam_hata = kritik + yuksek + orta
                 uyumlu_madde = max(0, toplam_madde - toplam_hata)
@@ -107,40 +122,40 @@ if st.button("🚀 Analizi Başlat"):
                 p_orta = orta * 3
                 toplam_ceza = p_kritik + p_yuksek + p_orta
                 
-                # Skor (Normalize edilmiş)
+                # Skor
                 max_risk = toplam_madde * 10
                 uyum_skoru = round(max(0, (1 - (toplam_ceza / max_risk)) * 100), 1)
 
-                # Özet Kartları
-                st.info(f"📋 **Analiz Özeti:** Toplam **{toplam_madde}** madde incelendi. **{uyumlu_madde}** madde standartlara uyumlu, **{toplam_hata}** madde geliştirilmelidir.")
+                st.info(f"""
+                📊 **Yönetici Özeti:** İnceleme sonucunda döküman içerisindeki **{toplam_madde}** madde taranmıştır. 
+                Sistem; **{uyumlu_madde}** maddeyi standartlara tam uyumlu bulurken, **{toplam_hata}** maddede gelişim alanı tespit etmiştir.
+                """)
                 
-                c1, c2, c3 = st.columns(3)
-                c1.metric("Güncel Uyum Skoru", f"% {uyum_skoru}", f"-{toplam_ceza} Puan")
-                c2.write(f"🔴 **{kritik}** Kritik | 🟠 **{yuksek}** Yüksek | 🟡 **{orta}** Orta")
-                c3.metric("Hata Yoğunluğu", f"{round(toplam_hata/toplam_madde, 2)}", "Hata / Madde")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Güncel Uyum Skoru", f"% {uyum_skoru}", f"-{toplam_ceza} Puan", delta_color="inverse")
+                with col2:
+                    st.write(f"🔴 **{kritik}** Kritik | 🟠 **{yuksek}** Yüksek | 🟡 **{orta}** Orta")
+                with col3:
+                    st.metric("Hata Yoğunluğu", f"{round(toplam_hata/toplam_madde, 2)}", "Hata / Madde")
 
                 st.divider()
                 
-                # Matematiksel Döküm Bölümü
-                st.subheader("🧮 Hesaplama Metodolojisi (Gerçek Verilerle)")
+                st.subheader("🧮 Puanlama Nasıl Hesaplanıyor? (Matematiksel Döküm)")
                 st.markdown(f"""
-                Bu döküman için hesaplama aşağıdaki veriler kullanılarak anlık yapılmıştır:
+                Bu rapor için o anki verilerle yapılan hesaplama dökümü:
                 
-                **1. Ceza Puanı Hesabı:**
-                * **Kritik Hatalar:** {kritik} adet × 10 Puan = **{p_kritik}**
-                * **Yüksek Hatalar:** {yuksek} adet × 6 Puan = **{p_yuksek}**
-                * **Orta Hatalar:** {orta} adet × 3 Puan = **{p_orta}**
-                * **Toplam Ceza:** **{toplam_ceza} Puan**
-                
-                **2. Kapasite ve Oran:**
-                * Döküman Hacmi: {toplam_madde} Madde
-                * Maksimum Risk Barajı ({toplam_madde} × 10): {max_risk} Puan
-                
-                **3. Final Formül:**
-                * `Skor = 100 × (1 - (Toplam Ceza / Maksimum Risk))`
-                * `Skor = 100 × (1 - ({toplam_ceza} / {max_risk}))`
+                **1. Risk Seviyelerine Göre Hata Sayıları:**
+                * **Kritik Hata (🔴):** {kritik} adet x 10 Puan = **{p_kritik}**
+                * **Yüksek Hata (🟠):** {yuksek} adet x 6 Puan = **{p_yuksek}**
+                * **Orta Hata (🟡):** {orta} adet x 3 Puan = **{p_orta}**
+                * **Toplam Ceza Puanı:** **{toplam_ceza}**
+
+                **2. Uyum Skoru Hesabı:**
+                * Toplam Taranan Madde: **{toplam_madde}**
+                * Formül: `100 * (1 - ({toplam_ceza} / ({toplam_madde} * 10)))`
                 * **Sonuç: %{uyum_skoru}**
                 """)
 
         except Exception as e:
-            st.error(f"❌ Hata: {e}")
+            st.error(f"❌ Analiz Hatası: {e}")
