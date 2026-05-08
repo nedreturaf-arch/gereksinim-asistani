@@ -9,7 +9,7 @@ import pypdf as PyPDF2
 # 1. SAYFA VE ARAYÜZ YAPILANDIRMASI
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="Gereksinim Analiz Asistanı v4.1",
+    page_title="Gereksinim Analiz Asistanı v3.8",
     layout="wide"
 )
 
@@ -20,6 +20,7 @@ st.set_page_config(
 @st.cache_data(show_spinner=False)
 def modelleri_getir(api_key):
     genai.configure(api_key=api_key.strip())
+
     return [
         m.name.replace("models/", "")
         for m in genai.list_models()
@@ -39,6 +40,7 @@ with st.sidebar:
     )
 
     st.divider()
+
     secilen_model = None
 
     if api_key:
@@ -57,6 +59,7 @@ with st.sidebar:
                     modeller,
                     index=varsayilan_index
                 )
+
             else:
                 st.warning("⚠️ Kullanılabilir model bulunamadı.")
 
@@ -88,6 +91,12 @@ st.divider()
 # 5. YARDIMCI FONKSİYONLAR
 # ---------------------------------------------------------
 def dosya_oku(dosya):
+    """
+    PDF veya DOCX dosyasından analiz edilebilir metin çıkarır.
+    DOCX içinde paragraflar ve tablolar birlikte okunur.
+    PDF içinde boş sayfalar hata oluşturmaz.
+    """
+
     if dosya is None:
         return ""
 
@@ -104,7 +113,7 @@ def dosya_oku(dosya):
                 if temiz:
                     metinler.append(temiz)
 
-            # DOCX içindeki tabloları da oku
+            # DOCX içindeki tabloları oku
             for tablo in doc.tables:
                 for satir in tablo.rows:
                     hucreler = []
@@ -125,6 +134,7 @@ def dosya_oku(dosya):
 
             for sayfa in pdf_reader.pages:
                 sayfa_metni = sayfa.extract_text()
+
                 if sayfa_metni and sayfa_metni.strip():
                     metinler.append(sayfa_metni.strip())
 
@@ -166,7 +176,7 @@ def tablo_veri_satiri_mi(satir):
         "Standart Karşılığı",
         "Mevzuat Çerçevesi",
         "Referans Madde",
-        "Karakteristik ve Analiz",
+        "Karakteristik",
         "Uyum Önerisi",
         "Hukuki Uyum Önerisi",
         "Teknik Önlem",
@@ -178,18 +188,20 @@ def tablo_veri_satiri_mi(satir):
     if any(ifade in temiz_satir for ifade in baslik_ifadeleri):
         return False
 
-    bos_uyum_ifadeleri = [
-        "✅",
-        "⚠️"
-    ]
-
-    if any(ifade in temiz_satir for ifade in bos_uyum_ifadeleri):
+    if "✅" in temiz_satir or "⚠️" in temiz_satir:
         return False
 
     return True
 
 
 def skor_hesapla(ai_cevabi, analiz_metni):
+    """
+    AI cevabındaki tablo satırlarına göre risk ve uyum skoru hesaplar.
+    KVKK + ISO 27001 = Kritik
+    ISO 25010 = Yüksek
+    IEEE 29148 = Orta
+    """
+
     satirlar = ai_cevabi.split("\n")
 
     kritik_hata = 0
@@ -202,12 +214,16 @@ def skor_hesapla(ai_cevabi, analiz_metni):
 
         if "IEEE 29148" in temiz_satir:
             aktif_tablo = 1
+
         elif "KVKK" in temiz_satir:
             aktif_tablo = 2
+
         elif "ISO 27001" in temiz_satir:
             aktif_tablo = 3
+
         elif "ISO 25010" in temiz_satir or "ISO/IEC 25010" in temiz_satir:
             aktif_tablo = 4
+
         elif "Standartlara Tam Uyumlu" in temiz_satir:
             aktif_tablo = 5
 
@@ -255,7 +271,15 @@ def skor_hesapla(ai_cevabi, analiz_metni):
 def hata_mesaji_goster(e):
     hata_metni = str(e)
 
-    if "403" in hata_metni or "denied access" in hata_metni.lower():
+    if "contents must not be empty" in hata_metni.lower():
+        st.error("❌ Analiz metni boş gönderildi.")
+        st.warning(
+            "Dosya okunamamış olabilir veya metin alanı boş olabilir. "
+            "Lütfen yüklenen dosyanın metin içerdiğinden emin olun."
+        )
+        st.caption(f"Teknik detay: {e}")
+
+    elif "403" in hata_metni or "denied access" in hata_metni.lower():
         st.error("❌ API erişim hatası.")
         st.warning(
             "Google Cloud projenizin Gemini API erişimi reddedilmiş olabilir. "
@@ -285,37 +309,55 @@ def hata_mesaji_goster(e):
         st.error(f"❌ Analiz Hatası: {e}")
 
 
-def analiz_promptu_olustur(analiz_turu, analiz_metni):
-    sistem_talimati = """
-            Sen uzman bir Yazılım Kalite Direktörü ve BT Uyum Denetçisisin.
-            Gereksinimleri analiz ederken 'İzlenebilirlik' (Traceability) prensibini uygula.
+def sistem_talimati_olustur():
+    """
+    İlk günlerdeki daha serbest, tek çağrılı ve daha doğal analiz yapan sistem talimatı.
+    Çok katı tablo bütünlüğü kuralları kaldırılmıştır.
+    """
 
-            KURAL 1: Doğrudan tablolara başla. Giriş/Sonuç cümlesi yazma.
-            KURAL 2: Her ihlal için gereksinim belgesindeki 'İLGİLİ İFADEYİ' alıntıla ve hangi 'STANDART MADDESİ' ile neden çeliştiğini açıkla.
-            KURAL 3: İhlal yoksa "✅ Tam uyum sağlanmıştır" yaz.
-            KURAL 4: Risk İkonları: IEEE(🟡), KVKK/ISO27001(🔴), ISO25010(🟠), Başarılı(🟢).
-            KURAL 5 (ÖNEMLİ): Tablo 5 (Başarılı Örnekler) kısmına metindeki tüm maddeler arasından en az 5, en fazla 10 adet en iyi pratik (best practice) örneğini KESİNLİKLE ekle. Özet geçme.
+    return """
+Sen uzman bir Yazlım Kalite Direktörü ve BT Uyum Denetçisisin. Çıktılarını SADECE Türkçe üret.
 
-            ### 1. 📏 IEEE 29148 Gereksinim Kalitesi Uyumluluğu
-            | Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı ve Analiz | Uyum Önerisi |
-            |---|---|---|---|
+KURAL 1: Doğrudan tablolara başla. Giriş/Sonuç cümlesi yazma.
 
-            ### 2. 🛡️ KVKK ve Veri Gizliliği Mevzuatı Uyumluluğu
-            | Gereksinimdeki İfade | KVKK Riski | Mevzuat Maddesi ve Çelişme Nedeni | Hukuki Uyum Şartı |
-            |---|---|---|---|
+KURAL 2: İhlal yoksa ilgili tabloya "✅ Tam uyum sağlanmıştır" yaz.
 
-            ### 3. 🔒 ISO 27001 Bilgi Güvenliği Uyumluluğu
-            | Gereksinimdeki İfade | Güvenlik Zafiyeti | Referans Madde ve Teknik Gerekçe | Teknik Önlem |
-            |---|---|---|---|
+KURAL 3: Metinde olmayan gereksinim ifadesi üretme. Uydurma örnek oluşturma.
 
-            ### 4. ⚙️ ISO 25010 Yazılım Kalite Modeli Uyumluluğu
-            | Gereksinimdeki İfade | Kalite Eksikliği | Karakteristik ve Analiz | Kalite Hedefi |
-            |---|---|---|---|
+KURAL 4: "Standartlara Tam Uyumlu Gereksinimler" tablosuna SADECE metinde açıkça bulunan en fazla 5 madde ekle.
+Eğer metinde standartlara tam uyumlu bir madde bulunmuyorsa tabloya "⚠️ Metin içerisinde standartlara tam uyumlu bir madde tespit edilememiştir." yaz.
 
-            ### 5. 🌟 Standartlara Tam Uyumlu Gereksinimler
-            | Başarılı Gereksinim | Karşıladığı Standartlar | Uyum Gerekçesi (Neden Başarılı?) |
-            |---|---|---|
-            """
+KURAL 5: Standart, mevzuat veya kalite karşılığı biliniyorsa yaz. Emin değilsen uydurma madde numarası verme; ilgili standart prensibini veya kalite karakteristiğini açıkla.
+
+KURAL 6: Her bulguda gereksinimdeki ilgili ifadeyi kısa biçimde alıntıla ve neden riskli olduğunu açıkla.
+
+ANALİZ KAPSAMI:
+- IEEE 29148 kapsamında belirsiz, ölçülemeyen, doğrulanamayan, test edilemeyen ve yoruma açık gereksinimleri değerlendir.
+- KVKK kapsamında kişisel veri, vatandaş verisi, kullanıcı bilgisi, IP adresi, log kaydı, veri saklama, veri paylaşımı ve gizlilik risklerini değerlendir.
+- ISO 27001 kapsamında kimlik doğrulama, yetkilendirme, erişim kontrolü, loglama, SSL, brute force, LDAP, veri güvenliği ve olay izleme konularını değerlendir.
+- ISO 25010 kapsamında performans verimliliği, kullanılabilirlik, güvenilirlik, bakım yapılabilirlik, uyumluluk, güvenlik ve taşınabilirlik açısından kalite eksikliklerini değerlendir.
+
+### 1. 📏 IEEE 29148 Uyumluluğu
+| Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı ve Analiz | Uyum Önerisi |
+|---|---|---|---|
+
+### 2. 🛡️ KVKK Uyumluluğu
+| Gereksinimdeki İfade | KVKK Riski | Mevzuat Çerçevesi ve Çelişme Nedeni | Hukuki Uyum Önerisi |
+|---|---|---|---|
+
+### 3. 🔒 ISO 27001 Uyumluluğu
+| Gereksinimdeki İfade | Güvenlik Riski | Referans Madde ve Teknik Gerekçe | Teknik Önlem |
+|---|---|---|---|
+
+### 4. ⚙️ ISO 25010 Uyumluluğu
+| Gereksinimdeki İfade | Kalite Eksikliği | Karakteristik ve Analiz | Kalite Hedefi |
+|---|---|---|---|
+
+### 5. 🌟 Standartlara Tam Uyumlu Gereksinimler
+| Başarılı Gereksinim | Karşıladığı Standartlar | Uyum Gerekçesi |
+|---|---|---|
+"""
+
 
 # ---------------------------------------------------------
 # 6. VERİ GİRİŞİ VE ANALİZ
@@ -336,112 +378,108 @@ metin_alani = st.text_area(
 if st.button("🚀 Analizi Başlat"):
     analiz_metni = dosya_oku(yuklenen_dosya) if yuklenen_dosya else metin_alani
 
-    if not api_key or not analiz_metni.strip() or not secilen_model:
-        st.warning("⚠️ Eksik bilgi: API anahtarı, model seçimi veya metin gereklidir.")
+    if not api_key:
+        st.warning("⚠️ Gemini API anahtarı gereklidir.")
+        st.stop()
 
-    else:
-        try:
-            genai.configure(api_key=api_key.strip())
-            model = genai.GenerativeModel(secilen_model)
+    if not secilen_model:
+        st.warning("⚠️ Model seçimi gereklidir.")
+        st.stop()
 
-            generation_config = {
-                "temperature": 0.1,
-                "top_p": 0.8,
-                "top_k": 40,
-                "max_output_tokens": 4096
-            }
+    if not analiz_metni or not analiz_metni.strip():
+        st.warning(
+            "⚠️ Analiz edilecek metin boş görünüyor. "
+            "Dosya okunamamış olabilir veya metin alanı boş olabilir."
+        )
+        st.stop()
 
-            analiz_turleri = [
-                "IEEE",
-                "KVKK",
-                "ISO27001",
-                "ISO25010",
-                "BASARILI"
-            ]
+    if len(analiz_metni.strip()) < 30:
+        st.warning("⚠️ Analiz metni çok kısa görünüyor.")
+        st.stop()
 
-            cevaplar = []
+    try:
+        genai.configure(api_key=api_key.strip())
+        model = genai.GenerativeModel(secilen_model)
 
-            with st.spinner("Analiz ediliyor..."):
-                baslangic_zamani = time.time()
+        sistem_talimati = sistem_talimati_olustur()
 
-                progress = st.progress(0)
-                durum = st.empty()
+        tam_prompt = f"""
+{sistem_talimati}
 
-                for i, analiz_turu in enumerate(analiz_turleri, start=1):
-                    durum.write(f"🔍 {i}/5 analiz yürütülüyor: {analiz_turu}")
+ANALİZ EDİLECEK METİN:
+{analiz_metni.strip()}
+"""
 
-                    prompt = analiz_promptu_olustur(
-                        analiz_turu=analiz_turu,
-                        analiz_metni=analiz_metni
-                    )
+        if not tam_prompt.strip():
+            st.warning("⚠️ Oluşturulan analiz promptu boş görünüyor.")
+            st.stop()
 
-                    cevap = model.generate_content(
-                        prompt,
-                        generation_config=generation_config
-                    )
+        generation_config = {
+            "temperature": 0.1,
+            "top_p": 0.8,
+            "top_k": 40,
+            "max_output_tokens": 8192
+        }
 
-                    if cevap and hasattr(cevap, "text") and cevap.text:
-                        cevaplar.append(cevap.text.strip())
-                    else:
-                        cevaplar.append(
-                            f"### {analiz_turu}\n\n| Durum | Açıklama |\n|---|---|\n| ✅ | Tam uyum sağlanmıştır |"
-                        )
+        with st.spinner("Analiz ediliyor..."):
+            baslangic_zamani = time.time()
 
-                    progress.progress(i / len(analiz_turleri))
+            cevap = model.generate_content(
+                tam_prompt,
+                generation_config=generation_config
+            )
 
-                bitis_zamani = time.time()
+            bitis_zamani = time.time()
 
-            gecen_sure = round(bitis_zamani - baslangic_zamani, 2)
-            gecen_sure_yazi = sure_formatla(gecen_sure)
+        gecen_sure = round(bitis_zamani - baslangic_zamani, 2)
+        gecen_sure_yazi = sure_formatla(gecen_sure)
 
-            ai_cevabi = "\n\n".join(cevaplar)
+        if cevap and hasattr(cevap, "text") and cevap.text:
+            st.success(f"✅ Analiz Tamamlandı! Süre: {gecen_sure_yazi}")
 
-            if ai_cevabi.strip():
-                st.success(f"✅ Analiz Tamamlandı! Süre: {gecen_sure_yazi}")
+            st.metric(
+                label="⏱️ Analiz Süresi",
+                value=gecen_sure_yazi
+            )
 
-                st.metric(
-                    label="⏱️ Analiz Süresi",
-                    value=gecen_sure_yazi
+            st.markdown(cevap.text)
+
+            with st.expander("📊 Doküman Uyum Skoru", expanded=True):
+                skor = skor_hesapla(cevap.text, analiz_metni)
+
+                if skor is None:
+                    st.error("Skor hesaplama sonucu boş döndü. Lütfen skor_hesapla fonksiyonunu kontrol edin.")
+                    st.stop()
+
+                st.info(
+                    f"Taranan Madde: {skor['toplam_madde']} | "
+                    f"Uyumlu: {skor['basarili_madde']} | "
+                    f"Hatalı: {skor['toplam_hata']}"
                 )
 
-                st.markdown(ai_cevabi)
+                c1, c2, c3 = st.columns(3)
 
-                with st.expander("📊 Doküman Uyum Skoru", expanded=True):
-                    skor = skor_hesapla(ai_cevabi, analiz_metni)
+                c1.metric(
+                    "Uyum Skoru",
+                    f"% {skor['mevcut_skor']}",
+                    f"-{skor['toplam_ceza']} Risk"
+                )
 
-                    if skor is None:
-                        st.error("Skor hesaplama sonucu boş döndü. Lütfen skor_hesapla fonksiyonunu kontrol edin.")
-                        st.stop()
+                c2.write(
+                    f"🔴 {skor['kritik_hata']} Kritik\n\n"
+                    f"🟠 {skor['yuksek_hata']} Yüksek\n\n"
+                    f"🟡 {skor['orta_hata']} Orta"
+                )
 
-                    st.info(
-                        f"Taranan Madde: {skor['toplam_madde']} | "
-                        f"Uyumlu: {skor['basarili_madde']} | "
-                        f"Hatalı: {skor['toplam_hata']}"
-                    )
+                c3.metric(
+                    "Uyumlu Madde",
+                    f"{skor['basarili_madde']} Adet"
+                )
 
-                    c1, c2, c3 = st.columns(3)
+                st.divider()
 
-                    c1.metric(
-                        "Uyum Skoru",
-                        f"% {skor['mevcut_skor']}",
-                        f"-{skor['toplam_ceza']} Risk"
-                    )
-
-                    c2.write(
-                        f"🔴 {skor['kritik_hata']} Kritik\n\n"
-                        f"🟠 {skor['yuksek_hata']} Yüksek\n\n"
-                        f"🟡 {skor['orta_hata']} Orta"
-                    )
-
-                    c3.metric(
-                        "Uyumlu Madde",
-                        f"{skor['basarili_madde']} Adet"
-                    )
-
-                    st.divider()
-
-                    with st.expander("🧮 Puanlama Nasıl Hesaplanıyor? (Matematiksel Döküm)"):
-                        st.markdown(f"""
+                with st.expander("🧮 Puanlama Nasıl Hesaplanıyor? (Matematiksel Döküm)"):
+                    st.markdown(f"""
 **1. Madde ve Hata Tespiti:**
 
 * **Toplam Taranan Madde:** {skor['toplam_madde']}
@@ -464,8 +502,8 @@ if st.button("🚀 Analizi Başlat"):
 * **Sonuç:** 100 - (Risk Oranı x 100) = **% {skor['mevcut_skor']}**
 """)
 
-            else:
-                st.error("❌ Modelden yanıt alınamadı.")
+        else:
+            st.error("❌ Modelden yanıt alınamadı.")
 
-        except Exception as e:
-            hata_mesaji_goster(e)
+    except Exception as e:
+        hata_mesaji_goster(e)
