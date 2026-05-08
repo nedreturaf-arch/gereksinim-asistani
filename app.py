@@ -286,12 +286,6 @@ Gereksinimleri analiz ederken 'İzlenebilirlik' (Traceability) prensibini uygula
     KURAL 8:Başarılı örnek yoksa "⚠️ Metin içerisinde standartlara tam uyumlu bir madde tespit edilememiştir." yaz.
     KURAL 9:"Standart Karşılığı ve Analiz","Mevzuat Çerçevesi ve Çelişme Nedeni","Referans Madde ve Teknik Gerekçe","Karakteristik ve Analiz" bölümlerine karşıladığı standardın veya mevzuatın tam maddesini yaz.
 
-ANALİZ YAKLAŞIMI:
-- Belirsiz, ölçülemeyen, yoruma açık ve test edilmesi zor ifadeleri IEEE 29148 kapsamında değerlendir.
-- Kişisel veri, vatandaş verisi, kullanıcı bilgisi, log, IP adresi, yurtiçi veri işleme, gizlilik, veri paylaşımı ve veri saklama ifadelerini KVKK kapsamında değerlendir.
-- Kimlik doğrulama, yetkilendirme, 2FA, LDAP, loglama, IP kaydı, brute force, SSL, veri güvenliği, erişim kontrolü ve olay izleme ifadelerini ISO 27001 kapsamında değerlendir.
-- Performans, kullanılabilirlik, güvenilirlik, bakım yapılabilirlik, erişilebilirlik, hata toleransı, verimlilik ve sürdürülebilirlik ifadelerini ISO 25010 kapsamında değerlendir.
-
 ### 1. 📏 IEEE 29148 Uyumluluğu
 | Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı ve Analiz | Uyum Önerisi |
 |---|---|---|---|
