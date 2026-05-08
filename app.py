@@ -59,10 +59,8 @@ def dosya_oku(dosya):
 def sure_formatla(saniye):
     dakika = int(saniye // 60)
     kalan_saniye = round(saniye % 60, 2)
-
     if dakika > 0:
         return f"{dakika} dk {kalan_saniye} sn"
-
     return f"{kalan_saniye} sn"
 
 # --- 5. YAPAY ZEKA ANALİZ SÜRECİ ---
@@ -75,7 +73,7 @@ if st.button("🚀 Analizi Başlat"):
         try:
             model = genai.GenerativeModel(secilen_model)
             
-            # --- PROMPT MÜHENDİSLİĞİ (GÜNCELLENMİŞ KURAL 5) ---
+            # --- PROMPT MÜHENDİSLİĞİ ---
             sistem_talimati = """
             Sen uzman bir Yazılım Kalite Direktörü ve BT Uyum Denetçisisin.
             Gereksinimleri analiz ederken 'İzlenebilirlik' (Traceability) prensibini uygula.
@@ -107,26 +105,18 @@ if st.button("🚀 Analizi Başlat"):
             |---|---|---|
             """
             
-    with st.spinner("Yapay Zeka İzlenebilirlik Analizini Gerçekleştiriyor..."):
-    baslangic_zamani = time.time()
+            with st.spinner("Yapay Zeka İzlenebilirlik Analizini Gerçekleştiriyor..."):
+                baslangic_zamani = time.time()
+                cevap = model.generate_content(f"{sistem_talimati}\n\nAnaliz edilecek metin:\n{analiz_metni}")
+                bitis_zamani = time.time()
 
-    cevap = model.generate_content(
-        f"{sistem_talimati}\n\nAnaliz edilecek metin:\n{analiz_metni}"
-    )
+            gecen_sure = round(bitis_zamani - baslangic_zamani, 2)
+            gecen_sure_yazi = sure_formatla(gecen_sure)
 
-    bitis_zamani = time.time()
+            st.success(f"✅ Kapsamlı Uyumluluk Analizi Tamamlanmıştır! Süre: {gecen_sure_yazi}")
 
-gecen_sure = round(bitis_zamani - baslangic_zamani, 2)
-gecen_sure_yazi = sure_formatla(gecen_sure)
-
-st.success(f"✅ Kapsamlı Uyumluluk Analizi Tamamlanmıştır! Süre: {gecen_sure_yazi}")
-
-st.metric(
-    label="⏱️ Analiz Süresi",
-    value=gecen_sure_yazi
-)
-
-st.markdown(cevap.text)
+            st.metric(label="⏱️ Analiz Süresi", value=gecen_sure_yazi)
+            st.markdown(cevap.text)
             
             # --- 6. GÜNCELLENMİŞ POZİTİF SKORLAMA ALGORİTMASI ---
             with st.expander("📊 Doküman Uyum Skoru (ISTQB Risk Temelli Analiz)", expanded=True):
@@ -146,19 +136,14 @@ st.markdown(cevap.text)
                         elif aktif_tablo == 4: yuksek_hata += 1
                         elif aktif_tablo == 1: orta_hata += 1
                 
-                # Matematiksel risk ağırlıklandırma (100 üzerinden Pozitif Skorlama)
                 toplam_ceza = (kritik_hata * 10) + (yuksek_hata * 6) + (orta_hata * 3)
                 mevcut_skor = max(0, 100 - toplam_ceza)
                 
-                # Toplam madde sayısını dinamik hesapla (boş olmayan anlamlı satırlar)
                 toplam_madde = len([s for s in analiz_metni.split('\n') if len(s.strip()) > 15])
                 toplam_hata = kritik_hata + yuksek_hata + orta_hata
                 hatasiz_madde = max(0, toplam_madde - toplam_hata)
                 
-                st.info(f"""
-                📊 **Yönetici Özeti:** İnceleme sonucunda döküman içerisindeki **{toplam_madde}** madde taranmıştır. 
-                Sistem; **{hatasiz_madde}** maddeyi standartlara tam uyumlu bulurken, **{toplam_hata}** maddede gelişim alanı tespit etmiştir.
-                """)
+                st.info(f"📊 **Yönetici Özeti:** İnceleme sonucunda döküman içerisindeki **{toplam_madde}** madde taranmıştır. Sistem; **{hatasiz_madde}** maddeyi standartlara tam uyumlu bulurken, **{toplam_hata}** maddede gelişim alanı tespit etmiştir.")
                 
                 col1, col2, col3 = st.columns(3)
                 with col1:
@@ -170,67 +155,13 @@ st.markdown(cevap.text)
                 
                 st.divider()
 
-                with st.expander("🧮 Puanlama Nasıl Hesaplanıyor? (Matematiksel Döküm)"):
+                with st.expander("🧮 Puanlama Nasıl Hesaplanıyor?"):
                     st.markdown(f"""
-**1. Risk Seviyelerine Göre Hata Sayıları**
+                    **Toplam Ceza Puanı:** {kritik_hata * 10} + {yuksek_hata * 6} + {orta_hata * 3} = **{toplam_ceza}**
+                    **Uyum Skoru:** 100 - {toplam_ceza} = **%{mevcut_skor}**
+                    """)
 
-* **Kritik Hata:** {kritik_hata} adet  
-  *KVKK ve ISO 27001 kapsamındaki bulgular kritik risk olarak değerlendirilmiştir.*
-
-* **Yüksek Hata:** {yuksek_hata} adet  
-  *ISO 25010 kapsamındaki kalite eksiklikleri yüksek risk olarak değerlendirilmiştir.*
-
-* **Orta Hata:** {orta_hata} adet  
-  *IEEE 29148 kapsamındaki gereksinim belirsizlikleri orta risk olarak değerlendirilmiştir.*
-
----
-
-**2. Risk Ağırlıkları**
-
-* Kritik hata ağırlığı: **10 puan**
-* Yüksek hata ağırlığı: **6 puan**
-* Orta hata ağırlığı: **3 puan**
-
----
-
-**3. Toplam Ceza Puanı Hesabı**
-
-* Kritik ceza: {kritik_hata} × 10 = **{kritik_hata * 10}**
-* Yüksek ceza: {yuksek_hata} × 6 = **{yuksek_hata * 6}**
-* Orta ceza: {orta_hata} × 3 = **{orta_hata * 3}**
-
-**Toplam Ceza Puanı:**  
-{kritik_hata * 10} + {yuksek_hata * 6} + {orta_hata * 3} = **{toplam_ceza}**
-
----
-
-**4. Uyum Skoru Hesabı**
-
-Başlangıç skoru **100** kabul edilmiştir.  
-Toplam ceza puanı bu değerden düşülmüştür.
-
-**Formül:**
-
-`Uyum Skoru = 100 - Toplam Ceza Puanı`
-
-**Uygulama:**
-
-`Uyum Skoru = 100 - {toplam_ceza}`
-
-**Sonuç:**
-
-**Uyum Skoru = %{mevcut_skor}**
-
----
-
-**5. Madde Bazlı Özet**
-
-* Toplam taranan madde: **{toplam_madde}**
-* Hatalı / gelişime açık madde: **{toplam_hata}**
-* Hatasız kabul edilen madde: **{hatasiz_madde}**
-""")
-
-                st.caption("💡 **Mühendislik Notu:** Bu rapor ISTQB Risk Temelli Analiz prensiplerine göre oluşturulmuştur. Başarılı maddelerin tamamı döküman boyutuna göre örneklenerek sunulmaktadır.")
+                st.caption("💡 **Mühendislik Notu:** Bu rapor ISTQB Risk Temelli Analiz prensiplerine göre oluşturulmuştur.")
 
         except Exception as e:
             st.error(f"❌ Analiz Hatası: {e}")
