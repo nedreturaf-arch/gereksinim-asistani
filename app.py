@@ -9,7 +9,7 @@ import pypdf as PyPDF2
 # 1. SAYFA VE ARAYÜZ YAPILANDIRMASI
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="Gereksinim Analiz Asistanı v4.0",
+    page_title="Gereksinim Analiz Asistanı v4.1",
     layout="wide"
 )
 
@@ -104,7 +104,7 @@ def dosya_oku(dosya):
                 if temiz:
                     metinler.append(temiz)
 
-            # DOCX tablolarını da oku
+            # DOCX içindeki tabloları da oku
             for tablo in doc.tables:
                 for satir in tablo.rows:
                     hucreler = []
@@ -162,7 +162,17 @@ def tablo_veri_satiri_mi(satir):
         "KVKK Riski",
         "Güvenlik Riski",
         "Kalite Eksikliği",
-        "Başarılı Gereksinim"
+        "Başarılı Gereksinim",
+        "Standart Karşılığı",
+        "Mevzuat Çerçevesi",
+        "Referans Madde",
+        "Karakteristik ve Analiz",
+        "Uyum Önerisi",
+        "Hukuki Uyum Önerisi",
+        "Teknik Önlem",
+        "Kalite Hedefi",
+        "Karşıladığı Standartlar",
+        "Uyum Gerekçesi"
     ]
 
     if any(ifade in temiz_satir for ifade in baslik_ifadeleri):
@@ -196,9 +206,7 @@ def skor_hesapla(ai_cevabi, analiz_metni):
             aktif_tablo = 2
         elif "ISO 27001" in temiz_satir:
             aktif_tablo = 3
-        elif "ISO 25010" in temiz_satir:
-            aktif_tablo = 4
-        elif "ISO/IEC 25010" in temiz_satir:
+        elif "ISO 25010" in temiz_satir or "ISO/IEC 25010" in temiz_satir:
             aktif_tablo = 4
         elif "Standartlara Tam Uyumlu" in temiz_satir:
             aktif_tablo = 5
@@ -293,6 +301,15 @@ GENEL KURALLAR:
 - Emin olmadığın durumda ilgili standart prensibini, kalite karakteristiğini, kontrol alanını veya mevzuat ilkesini yaz.
 - Açıklama hücrelerinde yalnızca standart adı yazıp bırakma; neden ilgili olduğunu ve gereksinimin neden eksik/riskli olduğunu açıkla.
 - Bulgu yoksa ilgili tabloya tek satır olarak "✅ Tam uyum sağlanmıştır" yaz.
+
+TABLO BÜTÜNLÜĞÜ KURALLARI:
+- Her tablo satırı, başlıktaki sütun sayısıyla birebir aynı sayıda hücre içermelidir.
+- Hiçbir tablo hücresi boş bırakılmamalıdır.
+- Bir hücre için bilgi yoksa "Belirtilmemiştir" yaz.
+- Her satır mutlaka | işaretiyle başlamalı ve | işaretiyle bitmelidir.
+- Markdown tablo yapısını bozacak şekilde hücre içinde | karakteri kullanma.
+- Her bulgu satırında tüm sütunları doldur.
+- İfade, risk/kriter, standart-mevzuat analizi ve öneri alanı boş kalmamalıdır.
 """
 
     if analiz_turu == "IEEE":
@@ -314,6 +331,7 @@ Odaklanılacak noktalar:
 
 En fazla 15 bulgu ver.
 Bulgu yoksa tabloya "✅ Tam uyum sağlanmıştır" yaz.
+Her bulgu satırında dört sütunun tamamını doldur. Boş hücre bırakma.
 
 ### 1. 📏 IEEE 29148 Uyumluluğu
 | Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı ve Analiz | Uyum Önerisi |
@@ -341,6 +359,7 @@ Odaklanılacak noktalar:
 
 En fazla 12 bulgu ver.
 Bulgu yoksa tabloya "✅ Tam uyum sağlanmıştır" yaz.
+Her bulgu satırında dört sütunun tamamını doldur. Boş hücre bırakma.
 
 ### 2. 🛡️ KVKK Uyumluluğu
 | Gereksinimdeki İfade | KVKK Riski | Mevzuat Çerçevesi ve Çelişme Nedeni | Hukuki Uyum Önerisi |
@@ -371,6 +390,7 @@ Odaklanılacak noktalar:
 
 En fazla 12 bulgu ver.
 Bulgu yoksa tabloya "✅ Tam uyum sağlanmıştır" yaz.
+Her bulgu satırında dört sütunun tamamını doldur. Boş hücre bırakma.
 
 ### 3. 🔒 ISO 27001 Uyumluluğu
 | Gereksinimdeki İfade | Güvenlik Riski | Referans Madde ve Teknik Gerekçe | Teknik Önlem |
@@ -407,6 +427,7 @@ Odaklanılacak kalite karakteristikleri:
 
 En fazla 12 bulgu ver.
 Bulgu yoksa tabloya "✅ Tam uyum sağlanmıştır" yaz.
+Her bulgu satırında dört sütunun tamamını doldur. Boş hücre bırakma.
 
 ### 4. ⚙️ ISO 25010 Uyumluluğu
 | Gereksinimdeki İfade | Kalite Eksikliği | Karakteristik ve Analiz | Kalite Hedefi |
@@ -422,6 +443,7 @@ Kurallar:
 - En fazla 5 başarılı örnek ver.
 - Uydurma örnek oluşturma.
 - Başarılı örnek yoksa tabloya "⚠️ Metin içerisinde standartlara tam uyumlu bir madde tespit edilememiştir." yaz.
+- Her bulgu satırında üç sütunun tamamını doldur. Boş hücre bırakma.
 
 ### 5. 🌟 Standartlara Tam Uyumlu Gereksinimler
 | Başarılı Gereksinim | Karşıladığı Standartlar | Uyum Gerekçesi |
