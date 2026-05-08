@@ -286,179 +286,36 @@ def hata_mesaji_goster(e):
 
 
 def analiz_promptu_olustur(analiz_turu, analiz_metni):
-    ortak_kurallar = """
-Sen uzman bir Yazılım Kalite Direktörü, Gereksinim Mühendisliği Analisti ve BT Uyum Denetçisisin.
-Çıktılarını SADECE Türkçe üret.
+    sistem_talimati = """
+            Sen uzman bir Yazılım Kalite Direktörü ve BT Uyum Denetçisisin.
+            Gereksinimleri analiz ederken 'İzlenebilirlik' (Traceability) prensibini uygula.
 
-GENEL KURALLAR:
-- Giriş, sonuç veya özet cümlesi yazma.
-- Sadece istenen Markdown tablosunu üret.
-- Tablo başlığını ve sütun adlarını aynen koru.
-- Metinde olmayan gereksinim ifadesi üretme.
-- Her bulguda gereksinim metnindeki ilgili ifadeyi kısa ve doğrudan alıntıla.
-- Uydurma kanun maddesi, standart maddesi veya kontrol numarası yazma.
-- Kesin madde numarasından emin değilsen madde numarası verme.
-- Emin olmadığın durumda ilgili standart prensibini, kalite karakteristiğini, kontrol alanını veya mevzuat ilkesini yaz.
-- Açıklama hücrelerinde yalnızca standart adı yazıp bırakma; neden ilgili olduğunu ve gereksinimin neden eksik/riskli olduğunu açıkla.
-- Bulgu yoksa ilgili tabloya tek satır olarak "✅ Tam uyum sağlanmıştır" yaz.
+            KURAL 1: Doğrudan tablolara başla. Giriş/Sonuç cümlesi yazma.
+            KURAL 2: Her ihlal için gereksinim belgesindeki 'İLGİLİ İFADEYİ' alıntıla ve hangi 'STANDART MADDESİ' ile neden çeliştiğini açıkla.
+            KURAL 3: İhlal yoksa "✅ Tam uyum sağlanmıştır" yaz.
+            KURAL 4: Risk İkonları: IEEE(🟡), KVKK/ISO27001(🔴), ISO25010(🟠), Başarılı(🟢).
+            KURAL 5 (ÖNEMLİ): Tablo 5 (Başarılı Örnekler) kısmına metindeki tüm maddeler arasından en az 5, en fazla 10 adet en iyi pratik (best practice) örneğini KESİNLİKLE ekle. Özet geçme.
 
-TABLO BÜTÜNLÜĞÜ KURALLARI:
-- Her tablo satırı, başlıktaki sütun sayısıyla birebir aynı sayıda hücre içermelidir.
-- Hiçbir tablo hücresi boş bırakılmamalıdır.
-- Bir hücre için bilgi yoksa "Belirtilmemiştir" yaz.
-- Her satır mutlaka | işaretiyle başlamalı ve | işaretiyle bitmelidir.
-- Markdown tablo yapısını bozacak şekilde hücre içinde | karakteri kullanma.
-- Her bulgu satırında tüm sütunları doldur.
-- İfade, risk/kriter, standart-mevzuat analizi ve öneri alanı boş kalmamalıdır.
-"""
+            ### 1. 📏 IEEE 29148 Gereksinim Kalitesi Uyumluluğu
+            | Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı ve Analiz | Uyum Önerisi |
+            |---|---|---|---|
 
-    if analiz_turu == "IEEE":
-        gorev = """
-YALNIZCA IEEE 29148 açısından analiz yap.
+            ### 2. 🛡️ KVKK ve Veri Gizliliği Mevzuatı Uyumluluğu
+            | Gereksinimdeki İfade | KVKK Riski | Mevzuat Maddesi ve Çelişme Nedeni | Hukuki Uyum Şartı |
+            |---|---|---|---|
 
-Odaklanılacak noktalar:
-- Belirsizlik
-- Ölçülemezlik
-- Doğrulanamazlık
-- Test edilemezlik
-- Eksik kabul kriteri
-- Yoruma açık ifade
-- Kapsam belirsizliği
-- Çelişkili veya eksik gereksinim
+            ### 3. 🔒 ISO 27001 Bilgi Güvenliği Uyumluluğu
+            | Gereksinimdeki İfade | Güvenlik Zafiyeti | Referans Madde ve Teknik Gerekçe | Teknik Önlem |
+            |---|---|---|---|
 
-Özellikle şu tür ifadeleri ara:
-"Hızlı", "kolay", "uygun", "tam uyumlu", "verimli", "yüksek performans", "doğru", "güvenli", "sorunsuz", "anında", "yeterli", "çalışır durumda", "bütün veriler".
+            ### 4. ⚙️ ISO 25010 Yazılım Kalite Modeli Uyumluluğu
+            | Gereksinimdeki İfade | Kalite Eksikliği | Karakteristik ve Analiz | Kalite Hedefi |
+            |---|---|---|---|
 
-En fazla 15 bulgu ver.
-Bulgu yoksa tabloya "✅ Tam uyum sağlanmıştır" yaz.
-Her bulgu satırında dört sütunun tamamını doldur. Boş hücre bırakma.
-
-### 1. 📏 IEEE 29148 Uyumluluğu
-| Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı ve Analiz | Uyum Önerisi |
-|---|---|---|---|
-"""
-
-    elif analiz_turu == "KVKK":
-        gorev = """
-YALNIZCA KVKK açısından analiz yap.
-
-Odaklanılacak noktalar:
-- Kişisel veri işleme amacı
-- Vatandaş verisi
-- Kullanıcı bilgisi
-- IP adresi
-- Log kaydı
-- Açık rıza
-- Aydınlatma yükümlülüğü
-- Veri minimizasyonu
-- Veri saklama süresi
-- Veri imha yöntemi
-- Yurt içi / yurt dışı veri işleme
-- Üçüncü taraflarla veri paylaşımı
-- Yetkisiz erişim riski
-
-En fazla 12 bulgu ver.
-Bulgu yoksa tabloya "✅ Tam uyum sağlanmıştır" yaz.
-Her bulgu satırında dört sütunun tamamını doldur. Boş hücre bırakma.
-
-### 2. 🛡️ KVKK Uyumluluğu
-| Gereksinimdeki İfade | KVKK Riski | Mevzuat Çerçevesi ve Çelişme Nedeni | Hukuki Uyum Önerisi |
-|---|---|---|---|
-"""
-
-    elif analiz_turu == "ISO27001":
-        gorev = """
-YALNIZCA ISO 27001 bilgi güvenliği açısından analiz yap.
-
-Odaklanılacak noktalar:
-- Kimlik doğrulama
-- Yetkilendirme
-- Rol tabanlı erişim
-- 2FA
-- LDAP
-- Loglama
-- IP kaydı
-- Brute force koruması
-- SSL / şifreli iletişim
-- Veri güvenliği
-- Erişim kontrolü
-- Olay izleme
-- Denetim kayıtları
-- Log saklama süresi
-- Log bütünlüğü
-- Yetki matrisi
-
-En fazla 12 bulgu ver.
-Bulgu yoksa tabloya "✅ Tam uyum sağlanmıştır" yaz.
-Her bulgu satırında dört sütunun tamamını doldur. Boş hücre bırakma.
-
-### 3. 🔒 ISO 27001 Uyumluluğu
-| Gereksinimdeki İfade | Güvenlik Riski | Referans Madde ve Teknik Gerekçe | Teknik Önlem |
-|---|---|---|---|
-"""
-
-    elif analiz_turu == "ISO25010":
-        gorev = """
-YALNIZCA ISO/IEC 25010 yazılım kalite modeli açısından analiz yap.
-
-Bu tabloyu MUTLAKA üret.
-
-Odaklanılacak kalite karakteristikleri:
-- Performans verimliliği
-- Kullanılabilirlik
-- Güvenilirlik
-- Bakım yapılabilirlik
-- Uyumluluk
-- Güvenlik
-- Taşınabilirlik
-- Erişilebilirlik
-
-Özellikle şu eksiklikleri ara:
-- Yanıt süresi belirtilmemişse
-- Eş zamanlı kullanıcı sayısı belirtilmemişse
-- İşlem hacmi belirtilmemişse
-- Hata oranı belirtilmemişse
-- Kullanıcı memnuniyeti veya kullanılabilirlik ölçütü yoksa
-- Hata toleransı veya kurtarma süresi yoksa
-- Bakım, güncelleme veya sürdürülebilirlik ölçütü yoksa
-- Entegrasyon performansı belirsizse
-- Sistem erişilebilirlik hedefi yoksa
-- Performans ve verimlilik ifadeleri ölçülebilir değilse
-
-En fazla 12 bulgu ver.
-Bulgu yoksa tabloya "✅ Tam uyum sağlanmıştır" yaz.
-Her bulgu satırında dört sütunun tamamını doldur. Boş hücre bırakma.
-
-### 4. ⚙️ ISO 25010 Uyumluluğu
-| Gereksinimdeki İfade | Kalite Eksikliği | Karakteristik ve Analiz | Kalite Hedefi |
-|---|---|---|---|
-"""
-
-    elif analiz_turu == "BASARILI":
-        gorev = """
-YALNIZCA standartlara tam veya güçlü biçimde uyumlu görünen başarılı gereksinimleri seç.
-
-Kurallar:
-- SADECE metinde gerçekten bulunan ifadeleri kullan.
-- En fazla 5 başarılı örnek ver.
-- Uydurma örnek oluşturma.
-- Başarılı örnek yoksa tabloya "⚠️ Metin içerisinde standartlara tam uyumlu bir madde tespit edilememiştir." yaz.
-- Her bulgu satırında üç sütunun tamamını doldur. Boş hücre bırakma.
-
-### 5. 🌟 Standartlara Tam Uyumlu Gereksinimler
-| Başarılı Gereksinim | Karşıladığı Standartlar | Uyum Gerekçesi |
-|---|---|---|
-"""
-
-    return f"""
-{ortak_kurallar}
-
-{gorev}
-
-ANALİZ EDİLECEK METİN:
-{analiz_metni.strip()}
-"""
-
+            ### 5. 🌟 Standartlara Tam Uyumlu Gereksinimler
+            | Başarılı Gereksinim | Karşıladığı Standartlar | Uyum Gerekçesi (Neden Başarılı?) |
+            |---|---|---|
+            """
 
 # ---------------------------------------------------------
 # 6. VERİ GİRİŞİ VE ANALİZ
