@@ -153,13 +153,31 @@ if st.button("🚀 Analizi Başlat"):
                 with col3:
                     st.metric("Hedeflenen Durum", "% 100", f"+{toplam_ceza} Gelişim")
                 
-                st.divider()
+               st.divider()
 
-                with st.expander("🧮 Puanlama Nasıl Hesaplanıyor?"):
-                    st.markdown(f"""
-                    **Toplam Ceza Puanı:** {kritik_hata * 10} + {yuksek_hata * 6} + {orta_hata * 3} = **{toplam_ceza}**
-                    **Uyum Skoru:** 100 - {toplam_ceza} = **%{mevcut_skor}**
-                    """)
+                    with st.expander("🧮 Puanlama Nasıl Hesaplanıyor? (Matematiksel Döküm)"):
+                        st.markdown(f"""
+**1. Madde ve Hata Tespiti:**
+
+* **Toplam Taranan Madde:** {skor['toplam_madde']}
+* **Tespit Edilen Hatalar:** {skor['kritik_hata']} Kritik + {skor['yuksek_hata']} Yüksek + {skor['orta_hata']} Orta = **{skor['toplam_hata']} Toplam Hata**
+* **Başarılı Madde:** {skor['toplam_madde']} (Toplam) - {skor['toplam_hata']} (Hata) = **{skor['basarili_madde']} Adet**
+
+**2. Risk (Ceza) Puanı Hesabı:**
+
+*(Ağırlıklar - Kritik: 10, Yüksek: 6, Orta: 3)*
+
+* Kritik Risk Cezası: {skor['kritik_hata']} x 10 = **{skor['kritik_hata'] * 10} Puan**
+* Yüksek Risk Cezası: {skor['yuksek_hata']} x 6 = **{skor['yuksek_hata'] * 6} Puan**
+* Orta Risk Cezası: {skor['orta_hata']} x 3 = **{skor['orta_hata'] * 3} Puan**
+* **Toplam Risk Puanı:** **{skor['toplam_ceza']} Puan**
+
+**3. Uyum Yüzdesi (%):**
+
+* **Maksimum Olası Risk:** {skor['toplam_madde']} x 10 = **{skor['maksimum_risk']}**
+* **Risk Oranı:** {skor['toplam_ceza']} / {skor['maksimum_risk']} = **{skor['toplam_ceza'] / skor['maksimum_risk']:.4f}**
+* **Sonuç:** 100 - (Risk Oranı x 100) = **% {skor['mevcut_skor']}**
+""")
 
                 st.caption("💡 **Mühendislik Notu:** Bu rapor ISTQB Risk Temelli Analiz prensiplerine göre oluşturulmuştur.")
 
