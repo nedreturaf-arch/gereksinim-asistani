@@ -18,9 +18,12 @@ with st.sidebar:
         try:
             genai.configure(api_key=api_key.strip())
             modeller = [m.name.replace("models/", "") for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-            secilen_model = st.selectbox("🤖 Model Seçin:", modeller)
+            if modeller:
+                secilen_model = st.selectbox("🤖 Model Seçin:", modeller)
+            else:
+                st.error("⚠️ Uygun model bulunamadı.")
         except Exception as e:
-            st.error("⚠️ API Hatası: Bağlantı kurulamadı.")
+            st.error("⚠️ API Hatası: Bağlantı kurulamadı. Anahtarı kontrol edin.")
 
 # --- 3. ANA EKRAN VE GENİŞLETİLMİŞ BİLGİLENDİRME ---
 st.title("🎯 Gereksinim & Kalite Analiz Asistanı")
@@ -67,43 +70,44 @@ def sure_formatla(saniye):
 if st.button("🚀 Analizi Başlat"):
     analiz_metni = dosya_oku(yuklenen_dosya) if yuklenen_dosya else metin_alani
 
-    if not api_key or not analiz_metni:
-        st.warning("⚠️ Lütfen API anahtarını ve analiz edilecek metni sağlayın.")
+    # secilen_model de dolu mu diye kontrol ediyoruz
+    if not api_key or not secilen_model or not analiz_metni:
+        st.warning("⚠️ Lütfen API anahtarını girin, geçerli bir model seçin ve analiz edilecek metni sağlayın.")
     else:
         try:
             model = genai.GenerativeModel(secilen_model)
             
             # --- PROMPT MÜHENDİSLİĞİ ---
             sistem_talimati = """
-            Sen uzman bir Yazılım Kalite Direktörü ve BT Uyum Denetçisisin.
-            Gereksinimleri analiz ederken 'İzlenebilirlik' (Traceability) prensibini uygula.
+Sen uzman bir Yazılım Kalite Direktörü ve BT Uyum Denetçisisin.
+Gereksinimleri analiz ederken 'İzlenebilirlik' (Traceability) prensibini uygula.
 
-            KURAL 1: Doğrudan tablolara başla. Giriş/Sonuç cümlesi yazma.
-            KURAL 2: Her ihlal için gereksinim belgesindeki 'İLGİLİ İFADEYİ' alıntıla ve hangi 'STANDART MADDESİ' ile neden çeliştiğini açıkla.
-            KURAL 3: İhlal yoksa "✅ Tam uyum sağlanmıştır" yaz.
-            KURAL 4: Risk İkonları: IEEE(🟡), KVKK/ISO27001(🔴), ISO25010(🟠), Başarılı(🟢).
-            KURAL 5 (ÖNEMLİ): Tablo 5 (Başarılı Örnekler) kısmına metindeki tüm maddeler arasından en az 5, en fazla 10 adet en iyi pratik (best practice) örneğini KESİNLİKLE ekle. Özet geçme.
+KURAL 1: Doğrudan tablolara başla. Giriş/Sonuç cümlesi yazma.
+KURAL 2: Her ihlal için gereksinim belgesindeki 'İLGİLİ İFADEYİ' alıntıla ve hangi 'STANDART MADDESİ' ile neden çeliştiğini açıkla.
+KURAL 3: İhlal yoksa "✅ Tam uyum sağlanmıştır" yaz.
+KURAL 4: Risk İkonları: IEEE(🟡), KVKK/ISO27001(🔴), ISO25010(🟠), Başarılı(🟢).
+KURAL 5 (ÖNEMLİ): Tablo 5 (Başarılı Örnekler) kısmına metindeki tüm maddeler arasından en az 5, en fazla 10 adet en iyi pratik (best practice) örneğini KESİNLİKLE ekle. Özet geçme.
 
-            ### 1. 📏 IEEE 29148 Gereksinim Kalitesi Uyumluluğu
-            | Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı ve Analiz | Uyum Önerisi |
-            |---|---|---|---|
+### 1. 📏 IEEE 29148 Gereksinim Kalitesi Uyumluluğu
+| Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı ve Analiz | Uyum Önerisi |
+|---|---|---|---|
 
-            ### 2. 🛡️ KVKK ve Veri Gizliliği Mevzuatı Uyumluluğu
-            | Gereksinimdeki İfade | KVKK Riski | Mevzuat Maddesi ve Çelişme Nedeni | Hukuki Uyum Şartı |
-            |---|---|---|---|
+### 2. 🛡️ KVKK ve Veri Gizliliği Mevzuatı Uyumluluğu
+| Gereksinimdeki İfade | KVKK Riski | Mevzuat Maddesi ve Çelişme Nedeni | Hukuki Uyum Şartı |
+|---|---|---|---|
 
-            ### 3. 🔒 ISO 27001 Bilgi Güvenliği Uyumluluğu
-            | Gereksinimdeki İfade | Güvenlik Zafiyeti | Referans Madde ve Teknik Gerekçe | Teknik Önlem |
-            |---|---|---|---|
+### 3. 🔒 ISO 27001 Bilgi Güvenliği Uyumluluğu
+| Gereksinimdeki İfade | Güvenlik Zafiyeti | Referans Madde ve Teknik Gerekçe | Teknik Önlem |
+|---|---|---|---|
 
-            ### 4. ⚙️ ISO 25010 Yazılım Kalite Modeli Uyumluluğu
-            | Gereksinimdeki İfade | Kalite Eksikliği | Karakteristik ve Analiz | Kalite Hedefi |
-            |---|---|---|---|
+### 4. ⚙️ ISO 25010 Yazılım Kalite Modeli Uyumluluğu
+| Gereksinimdeki İfade | Kalite Eksikliği | Karakteristik ve Analiz | Kalite Hedefi |
+|---|---|---|---|
 
-            ### 5. 🌟 Standartlara Tam Uyumlu Gereksinimler
-            | Başarılı Gereksinim | Karşıladığı Standartlar | Uyum Gerekçesi (Neden Başarılı?) |
-            |---|---|---|
-            """
+### 5. 🌟 Standartlara Tam Uyumlu Gereksinimler
+| Başarılı Gereksinim | Karşıladığı Standartlar | Uyum Gerekçesi (Neden Başarılı?) |
+|---|---|---|
+"""
             
             with st.spinner("Yapay Zeka İzlenebilirlik Analizini Gerçekleştiriyor..."):
                 baslangic_zamani = time.time()
@@ -153,33 +157,16 @@ if st.button("🚀 Analizi Başlat"):
                 with col3:
                     st.metric("Hedeflenen Durum", "% 100", f"+{toplam_ceza} Gelişim")
                 
-               st.divider()
+                st.divider()
 
-                    with st.expander("🧮 Puanlama Nasıl Hesaplanıyor? (Matematiksel Döküm)"):
-                        st.markdown(f"""
-**1. Madde ve Hata Tespiti:**
+                with st.expander("🧮 Puanlama Nasıl Hesaplanıyor?"):
+                    st.markdown(f"""
+**Toplam Ceza Puanı:** {kritik_hata * 10} + {yuksek_hata * 6} + {orta_hata * 3} = **{toplam_ceza}**
 
-* **Toplam Taranan Madde:** {skor['toplam_madde']}
-* **Tespit Edilen Hatalar:** {skor['kritik_hata']} Kritik + {skor['yuksek_hata']} Yüksek + {skor['orta_hata']} Orta = **{skor['toplam_hata']} Toplam Hata**
-* **Başarılı Madde:** {skor['toplam_madde']} (Toplam) - {skor['toplam_hata']} (Hata) = **{skor['basarili_madde']} Adet**
-
-**2. Risk (Ceza) Puanı Hesabı:**
-
-*(Ağırlıklar - Kritik: 10, Yüksek: 6, Orta: 3)*
-
-* Kritik Risk Cezası: {skor['kritik_hata']} x 10 = **{skor['kritik_hata'] * 10} Puan**
-* Yüksek Risk Cezası: {skor['yuksek_hata']} x 6 = **{skor['yuksek_hata'] * 6} Puan**
-* Orta Risk Cezası: {skor['orta_hata']} x 3 = **{skor['orta_hata'] * 3} Puan**
-* **Toplam Risk Puanı:** **{skor['toplam_ceza']} Puan**
-
-**3. Uyum Yüzdesi (%):**
-
-* **Maksimum Olası Risk:** {skor['toplam_madde']} x 10 = **{skor['maksimum_risk']}**
-* **Risk Oranı:** {skor['toplam_ceza']} / {skor['maksimum_risk']} = **{skor['toplam_ceza'] / skor['maksimum_risk']:.4f}**
-* **Sonuç:** 100 - (Risk Oranı x 100) = **% {skor['mevcut_skor']}**
-""")
+**Uyum Skoru:** 100 - {toplam_ceza} = **%{mevcut_skor}**
+                    """)
 
                 st.caption("💡 **Mühendislik Notu:** Bu rapor ISTQB Risk Temelli Analiz prensiplerine göre oluşturulmuştur.")
 
         except Exception as e:
-            st.error(f"❌ Analiz Hatası: {e}")
+            st.error(f"❌ Analiz Hatası oluştu. Lütfen tekrar deneyin. Detay: {e}")
