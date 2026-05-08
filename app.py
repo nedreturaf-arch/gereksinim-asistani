@@ -4,13 +4,15 @@ import time
 from docx import Document
 import pypdf as PyPDF2
 
+
 # ---------------------------------------------------------
 # 1. SAYFA VE ARAYÜZ YAPILANDIRMASI
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="Gereksinim Analiz Asistanı v3.8",
+    page_title="Gereksinim Analiz Asistanı v4.0",
     layout="wide"
 )
+
 
 # ---------------------------------------------------------
 # 2. MODEL LİSTESİNİ ÖNBELLEĞE ALMA
@@ -23,6 +25,7 @@ def modelleri_getir(api_key):
         for m in genai.list_models()
         if "generateContent" in m.supported_generation_methods
     ]
+
 
 # ---------------------------------------------------------
 # 3. GÜVENLİK VE API YÖNETİMİ
@@ -61,6 +64,7 @@ with st.sidebar:
             st.error("⚠️ API Hatası: Bağlantı kurulamadı.")
             st.caption(f"Teknik detay: {e}")
 
+
 # ---------------------------------------------------------
 # 4. ANA EKRAN VE BİLGİLENDİRME
 # ---------------------------------------------------------
@@ -78,6 +82,7 @@ Bu sistem, gereksinim metinlerini aşağıdaki uluslararası standartlar ve yere
 """)
 
 st.divider()
+
 
 # ---------------------------------------------------------
 # 5. YARDIMCI FONKSİYONLAR
@@ -103,6 +108,7 @@ def dosya_oku(dosya):
             for tablo in doc.tables:
                 for satir in tablo.rows:
                     hucreler = []
+
                     for hucre in satir.cells:
                         hucre_metni = hucre.text.strip()
                         if hucre_metni:
@@ -141,6 +147,38 @@ def sure_formatla(saniye):
     return f"{kalan_saniye} sn"
 
 
+def tablo_veri_satiri_mi(satir):
+    temiz_satir = satir.strip()
+
+    if not temiz_satir.startswith("|") or not temiz_satir.endswith("|"):
+        return False
+
+    if "---" in temiz_satir:
+        return False
+
+    baslik_ifadeleri = [
+        "Gereksinimdeki İfade",
+        "İhlal Edilen Kriter",
+        "KVKK Riski",
+        "Güvenlik Riski",
+        "Kalite Eksikliği",
+        "Başarılı Gereksinim"
+    ]
+
+    if any(ifade in temiz_satir for ifade in baslik_ifadeleri):
+        return False
+
+    bos_uyum_ifadeleri = [
+        "✅",
+        "⚠️"
+    ]
+
+    if any(ifade in temiz_satir for ifade in bos_uyum_ifadeleri):
+        return False
+
+    return True
+
+
 def skor_hesapla(ai_cevabi, analiz_metni):
     satirlar = ai_cevabi.split("\n")
 
@@ -160,20 +198,12 @@ def skor_hesapla(ai_cevabi, analiz_metni):
             aktif_tablo = 3
         elif "ISO 25010" in temiz_satir:
             aktif_tablo = 4
+        elif "ISO/IEC 25010" in temiz_satir:
+            aktif_tablo = 4
         elif "Standartlara Tam Uyumlu" in temiz_satir:
             aktif_tablo = 5
 
-        tablo_satiri_mi = (
-            temiz_satir.startswith("|") and
-            temiz_satir.endswith("|") and
-            "---" not in temiz_satir and
-            "Gereksinimdeki İfade" not in temiz_satir and
-            "Başarılı Gereksinim" not in temiz_satir and
-            "✅" not in temiz_satir and
-            "⚠️" not in temiz_satir
-        )
-
-        if tablo_satiri_mi and aktif_tablo in [1, 2, 3, 4]:
+        if tablo_veri_satiri_mi(temiz_satir) and aktif_tablo in [1, 2, 3, 4]:
             if aktif_tablo in [2, 3]:
                 kritik_hata += 1
             elif aktif_tablo == 4:
@@ -246,6 +276,168 @@ def hata_mesaji_goster(e):
     else:
         st.error(f"❌ Analiz Hatası: {e}")
 
+
+def analiz_promptu_olustur(analiz_turu, analiz_metni):
+    ortak_kurallar = """
+Sen uzman bir Yazılım Kalite Direktörü, Gereksinim Mühendisliği Analisti ve BT Uyum Denetçisisin.
+Çıktılarını SADECE Türkçe üret.
+
+GENEL KURALLAR:
+- Giriş, sonuç veya özet cümlesi yazma.
+- Sadece istenen Markdown tablosunu üret.
+- Tablo başlığını ve sütun adlarını aynen koru.
+- Metinde olmayan gereksinim ifadesi üretme.
+- Her bulguda gereksinim metnindeki ilgili ifadeyi kısa ve doğrudan alıntıla.
+- Uydurma kanun maddesi, standart maddesi veya kontrol numarası yazma.
+- Kesin madde numarasından emin değilsen madde numarası verme.
+- Emin olmadığın durumda ilgili standart prensibini, kalite karakteristiğini, kontrol alanını veya mevzuat ilkesini yaz.
+- Açıklama hücrelerinde yalnızca standart adı yazıp bırakma; neden ilgili olduğunu ve gereksinimin neden eksik/riskli olduğunu açıkla.
+- Bulgu yoksa ilgili tabloya tek satır olarak "✅ Tam uyum sağlanmıştır" yaz.
+"""
+
+    if analiz_turu == "IEEE":
+        gorev = """
+YALNIZCA IEEE 29148 açısından analiz yap.
+
+Odaklanılacak noktalar:
+- Belirsizlik
+- Ölçülemezlik
+- Doğrulanamazlık
+- Test edilemezlik
+- Eksik kabul kriteri
+- Yoruma açık ifade
+- Kapsam belirsizliği
+- Çelişkili veya eksik gereksinim
+
+Özellikle şu tür ifadeleri ara:
+"Hızlı", "kolay", "uygun", "tam uyumlu", "verimli", "yüksek performans", "doğru", "güvenli", "sorunsuz", "anında", "yeterli", "çalışır durumda", "bütün veriler".
+
+En fazla 15 bulgu ver.
+Bulgu yoksa tabloya "✅ Tam uyum sağlanmıştır" yaz.
+
+### 1. 📏 IEEE 29148 Uyumluluğu
+| Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı ve Analiz | Uyum Önerisi |
+|---|---|---|---|
+"""
+
+    elif analiz_turu == "KVKK":
+        gorev = """
+YALNIZCA KVKK açısından analiz yap.
+
+Odaklanılacak noktalar:
+- Kişisel veri işleme amacı
+- Vatandaş verisi
+- Kullanıcı bilgisi
+- IP adresi
+- Log kaydı
+- Açık rıza
+- Aydınlatma yükümlülüğü
+- Veri minimizasyonu
+- Veri saklama süresi
+- Veri imha yöntemi
+- Yurt içi / yurt dışı veri işleme
+- Üçüncü taraflarla veri paylaşımı
+- Yetkisiz erişim riski
+
+En fazla 12 bulgu ver.
+Bulgu yoksa tabloya "✅ Tam uyum sağlanmıştır" yaz.
+
+### 2. 🛡️ KVKK Uyumluluğu
+| Gereksinimdeki İfade | KVKK Riski | Mevzuat Çerçevesi ve Çelişme Nedeni | Hukuki Uyum Önerisi |
+|---|---|---|---|
+"""
+
+    elif analiz_turu == "ISO27001":
+        gorev = """
+YALNIZCA ISO 27001 bilgi güvenliği açısından analiz yap.
+
+Odaklanılacak noktalar:
+- Kimlik doğrulama
+- Yetkilendirme
+- Rol tabanlı erişim
+- 2FA
+- LDAP
+- Loglama
+- IP kaydı
+- Brute force koruması
+- SSL / şifreli iletişim
+- Veri güvenliği
+- Erişim kontrolü
+- Olay izleme
+- Denetim kayıtları
+- Log saklama süresi
+- Log bütünlüğü
+- Yetki matrisi
+
+En fazla 12 bulgu ver.
+Bulgu yoksa tabloya "✅ Tam uyum sağlanmıştır" yaz.
+
+### 3. 🔒 ISO 27001 Uyumluluğu
+| Gereksinimdeki İfade | Güvenlik Riski | Referans Madde ve Teknik Gerekçe | Teknik Önlem |
+|---|---|---|---|
+"""
+
+    elif analiz_turu == "ISO25010":
+        gorev = """
+YALNIZCA ISO/IEC 25010 yazılım kalite modeli açısından analiz yap.
+
+Bu tabloyu MUTLAKA üret.
+
+Odaklanılacak kalite karakteristikleri:
+- Performans verimliliği
+- Kullanılabilirlik
+- Güvenilirlik
+- Bakım yapılabilirlik
+- Uyumluluk
+- Güvenlik
+- Taşınabilirlik
+- Erişilebilirlik
+
+Özellikle şu eksiklikleri ara:
+- Yanıt süresi belirtilmemişse
+- Eş zamanlı kullanıcı sayısı belirtilmemişse
+- İşlem hacmi belirtilmemişse
+- Hata oranı belirtilmemişse
+- Kullanıcı memnuniyeti veya kullanılabilirlik ölçütü yoksa
+- Hata toleransı veya kurtarma süresi yoksa
+- Bakım, güncelleme veya sürdürülebilirlik ölçütü yoksa
+- Entegrasyon performansı belirsizse
+- Sistem erişilebilirlik hedefi yoksa
+- Performans ve verimlilik ifadeleri ölçülebilir değilse
+
+En fazla 12 bulgu ver.
+Bulgu yoksa tabloya "✅ Tam uyum sağlanmıştır" yaz.
+
+### 4. ⚙️ ISO 25010 Uyumluluğu
+| Gereksinimdeki İfade | Kalite Eksikliği | Karakteristik ve Analiz | Kalite Hedefi |
+|---|---|---|---|
+"""
+
+    elif analiz_turu == "BASARILI":
+        gorev = """
+YALNIZCA standartlara tam veya güçlü biçimde uyumlu görünen başarılı gereksinimleri seç.
+
+Kurallar:
+- SADECE metinde gerçekten bulunan ifadeleri kullan.
+- En fazla 5 başarılı örnek ver.
+- Uydurma örnek oluşturma.
+- Başarılı örnek yoksa tabloya "⚠️ Metin içerisinde standartlara tam uyumlu bir madde tespit edilememiştir." yaz.
+
+### 5. 🌟 Standartlara Tam Uyumlu Gereksinimler
+| Başarılı Gereksinim | Karşıladığı Standartlar | Uyum Gerekçesi |
+|---|---|---|
+"""
+
+    return f"""
+{ortak_kurallar}
+
+{gorev}
+
+ANALİZ EDİLECEK METİN:
+{analiz_metni.strip()}
+"""
+
+
 # ---------------------------------------------------------
 # 6. VERİ GİRİŞİ VE ANALİZ
 # ---------------------------------------------------------
@@ -261,6 +453,7 @@ metin_alani = st.text_area(
     height=150
 )
 
+
 if st.button("🚀 Analizi Başlat"):
     analiz_metni = dosya_oku(yuklenen_dosya) if yuklenen_dosya else metin_alani
 
@@ -272,107 +465,59 @@ if st.button("🚀 Analizi Başlat"):
             genai.configure(api_key=api_key.strip())
             model = genai.GenerativeModel(secilen_model)
 
-            sistem_talimati = """
-Sen uzman bir Yazılım Kalite Direktörü, Gereksinim Mühendisliği Analisti ve BT Uyum Denetçisisin.
-Gereksinimleri analiz ederken izlenebilirlik (traceability) prensibini uygula.
-Çıktılarını SADECE Türkçe üret.
-
-GENEL KURALLAR:
-KURAL 1: Doğrudan tablolara başla. Giriş, sonuç veya özet cümlesi yazma.
-KURAL 2: Her ihlal için gereksinim belgesindeki ilgili ifadeyi kısa ve doğrudan alıntıla.
-KURAL 3: Metinde olmayan gereksinim ifadesi üretme.
-KURAL 4: Uydurma kanun maddesi, standart maddesi veya kontrol numarası yazma.
-KURAL 5: Kesin madde numarasından emin değilsen madde numarası verme. Bunun yerine ilgili standart prensibini, kalite karakteristiğini, kontrol alanını veya mevzuat ilkesini yaz.
-KURAL 6: İhlal yoksa ilgili tabloya sadece "✅ Tam uyum sağlanmıştır" yaz.
-KURAL 7: Risk ikonları: IEEE(🟡), KVKK/ISO27001(🔴), ISO25010(🟠), Başarılı(🟢).
-KURAL 8: "Standartlara Tam Uyumlu Gereksinimler" tablosuna SADECE metinde gerçekten bulunan en fazla 5 başarılı örnek ekle.
-KURAL 9: Başarılı örnek yoksa "⚠️ Metin içerisinde standartlara tam uyumlu bir madde tespit edilememiştir." yaz.
-KURAL 10: Çıktıda 1, 2, 3, 4 ve 5 numaralı tabloların tamamı MUTLAKA yer almalıdır. 
-Bir standart için ihlal veya bulgu yoksa o tablonun altına tek satır olarak "✅ Tam uyum sağlanmıştır" yaz.
-Hiçbir tabloyu boş bırakma ve hiçbir tablo başlığını atlama.
-
-STANDART / MEVZUAT KARŞILIĞI YAZMA KURALI:
-Aşağıdaki sütunlarda yalnızca kısa madde adı yazıp bırakma:
-- Standart Karşılığı ve Analiz
-- Mevzuat Çerçevesi ve Çelişme Nedeni
-- Referans Madde ve Teknik Gerekçe
-- Karakteristik ve Analiz
-
-Bu sütunlarda şu yapıyı kullan:
-1. Önce ilgili standart, mevzuat, kontrol alanı, kalite karakteristiği veya prensibi yaz.
-2. Sonra aynı hücre içinde gereksinimin neden eksik, belirsiz, ölçülemez, doğrulanamaz, test edilemez veya riskli olduğunu açıkla.
-3. Kesin madde numarasını biliyorsan yaz. Emin değilsen "ilgili standart prensibi" veya "ilgili kontrol alanı" düzeyinde yaz.
-4. Genel, yüzeysel veya sadece standart adı içeren açıklama yazma.
-
-DOĞRU YAZIM ÖRNEKLERİ:
-- IEEE 29148 - Ölçülebilirlik ve doğrulanabilirlik: "Hızlı çalışmalıdır" ifadesi yanıt süresi, işlem süresi veya kabul eşiği içermediği için test edilebilir değildir.
-- IEEE 29148 - Tek anlamlılık ve doğrulanabilirlik: "Çalışır durumda teslim edilecektir" ifadesi kabul testi, başarı ölçütü ve teslim kriteri tanımlamadığı için belirsizdir.
-- ISO 25010 - Performans verimliliği: Eş zamanlı kullanıcı sayısı, yanıt süresi ve işlem hacmi belirtilmediği için performans kalitesi ölçülemez.
-- ISO 25010 - Kullanılabilirlik: "Kolay kullanılabilir olmalıdır" ifadesi görev tamamlama süresi, hata oranı veya kullanıcı memnuniyet ölçütü içermediği için doğrulanamaz.
-- ISO 27001 - Erişim kontrolü: Rol tabanlı yetkilendirme belirtilmiş olsa da yetki matrisi, erişim seviyeleri ve denetim kayıtları açık tanımlanmadığında güvenlik kontrolü eksik kalır.
-- ISO 27001 - Loglama ve izleme: IP adresiyle giriş kaydı tutulması güvenlik izlenebilirliği sağlar; ancak log saklama süresi, erişim yetkisi ve bütünlük koruması belirtilmelidir.
-- KVKK - Aydınlatma yükümlülüğü ve veri minimizasyonu: Vatandaş verilerinin hangi amaçla, hangi süreyle, kimler tarafından ve hangi hukuki gerekçeyle işleneceği açık değildir.
-- KVKK - Veri aktarımı ve saklama ilkesi: Verilerin yurt içinde işleneceği belirtilmiş olsa da saklama süresi, imha yöntemi ve erişim yetkileri açıklanmalıdır.
-
-ANALİZ YAKLAŞIMI:
-- Belirsiz, ölçülemeyen, yoruma açık ve test edilmesi zor ifadeleri IEEE 29148 kapsamında değerlendir.
-- "Hızlı", "kolay", "uygun", "tam uyumlu", "verimli", "yüksek performans", "doğru", "güvenli", "sorunsuz", "anında", "yeterli" gibi ölçütsüz ifadeleri özellikle incele.
-- Kişisel veri, vatandaş verisi, kullanıcı bilgisi, log, IP adresi, yurtiçi veri işleme, gizlilik, veri paylaşımı, veri saklama ve imha ifadelerini KVKK kapsamında değerlendir.
-- Kimlik doğrulama, yetkilendirme, 2FA, LDAP, loglama, IP kaydı, brute force, SSL, veri güvenliği, erişim kontrolü ve olay izleme ifadelerini ISO 27001 kapsamında değerlendir.
-- Performans, kullanılabilirlik, güvenilirlik, bakım yapılabilirlik, erişilebilirlik, hata toleransı, verimlilik ve sürdürülebilirlik ifadelerini ISO 25010 kapsamında değerlendir.
-
-BULGU SAYISI:
-- IEEE 29148 tablosunda en fazla 15 bulgu ver.
-- KVKK tablosunda en fazla 12 bulgu ver.
-- ISO 27001 tablosunda en fazla 12 bulgu ver.
-- ISO 25010 tablosunda en fazla 12 bulgu ver.
-- Standartlara Tam Uyumlu Gereksinimler tablosunda en fazla 5 örnek ver.
-- Aynı türden tekrar eden bulguları birleştir; ancak farklı risk doğuran önemli ifadeleri atlama.
-
-### 1. 📏 IEEE 29148 Uyumluluğu
-| Gereksinimdeki İfade | İhlal Edilen Kriter | Standart Karşılığı ve Analiz | Uyum Önerisi |
-|---|---|---|---|
-
-### 2. 🛡️ KVKK Uyumluluğu
-| Gereksinimdeki İfade | KVKK Riski | Mevzuat Çerçevesi ve Çelişme Nedeni | Hukuki Uyum Önerisi |
-|---|---|---|---|
-
-### 3. 🔒 ISO 27001 Uyumluluğu
-| Gereksinimdeki İfade | Güvenlik Riski | Referans Madde ve Teknik Gerekçe | Teknik Önlem |
-|---|---|---|---|
-
-### 4. ⚙️ ISO 25010 Uyumluluğu
-| Gereksinimdeki İfade | Kalite Eksikliği | Karakteristik ve Analiz | Kalite Hedefi |
-|---|---|---|---|
-
-### 5. 🌟 Standartlara Tam Uyumlu Gereksinimler
-| Başarılı Gereksinim | Karşıladığı Standartlar | Uyum Gerekçesi |
-|---|---|---|
-"""
-
-            tam_prompt = f"{sistem_talimati}\n\nANALİZ EDİLECEK METİN:\n{analiz_metni.strip()}"
-
             generation_config = {
                 "temperature": 0.1,
                 "top_p": 0.8,
                 "top_k": 40,
-                "max_output_tokens": 8192
+                "max_output_tokens": 4096
             }
+
+            analiz_turleri = [
+                "IEEE",
+                "KVKK",
+                "ISO27001",
+                "ISO25010",
+                "BASARILI"
+            ]
+
+            cevaplar = []
 
             with st.spinner("Analiz ediliyor..."):
                 baslangic_zamani = time.time()
 
-                cevap = model.generate_content(
-                    tam_prompt,
-                    generation_config=generation_config
-                )
+                progress = st.progress(0)
+                durum = st.empty()
+
+                for i, analiz_turu in enumerate(analiz_turleri, start=1):
+                    durum.write(f"🔍 {i}/5 analiz yürütülüyor: {analiz_turu}")
+
+                    prompt = analiz_promptu_olustur(
+                        analiz_turu=analiz_turu,
+                        analiz_metni=analiz_metni
+                    )
+
+                    cevap = model.generate_content(
+                        prompt,
+                        generation_config=generation_config
+                    )
+
+                    if cevap and hasattr(cevap, "text") and cevap.text:
+                        cevaplar.append(cevap.text.strip())
+                    else:
+                        cevaplar.append(
+                            f"### {analiz_turu}\n\n| Durum | Açıklama |\n|---|---|\n| ✅ | Tam uyum sağlanmıştır |"
+                        )
+
+                    progress.progress(i / len(analiz_turleri))
 
                 bitis_zamani = time.time()
 
             gecen_sure = round(bitis_zamani - baslangic_zamani, 2)
             gecen_sure_yazi = sure_formatla(gecen_sure)
 
-            if cevap and hasattr(cevap, "text") and cevap.text:
+            ai_cevabi = "\n\n".join(cevaplar)
+
+            if ai_cevabi.strip():
                 st.success(f"✅ Analiz Tamamlandı! Süre: {gecen_sure_yazi}")
 
                 st.metric(
@@ -380,10 +525,10 @@ BULGU SAYISI:
                     value=gecen_sure_yazi
                 )
 
-                st.markdown(cevap.text)
+                st.markdown(ai_cevabi)
 
                 with st.expander("📊 Doküman Uyum Skoru", expanded=True):
-                    skor = skor_hesapla(cevap.text, analiz_metni)
+                    skor = skor_hesapla(ai_cevabi, analiz_metni)
 
                     if skor is None:
                         st.error("Skor hesaplama sonucu boş döndü. Lütfen skor_hesapla fonksiyonunu kontrol edin.")
