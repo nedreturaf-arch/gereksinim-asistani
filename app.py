@@ -107,7 +107,7 @@ if st.button("🚀 Analizi Başlat"):
             |---|---|---|
             """
             
-with st.spinner("Yapay Zeka İzlenebilirlik Analizini Gerçekleştiriyor..."):
+            with st.spinner("Yapay Zeka İzlenebilirlik Analizini Gerçekleştiriyor..."):
     baslangic_zamani = time.time()
 
     cevap = model.generate_content(
