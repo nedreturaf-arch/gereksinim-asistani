@@ -49,34 +49,33 @@ if st.button("🚀 Analizi Başlat"):
         try:
             model = genai.GenerativeModel(secilen_model)
             
-            # --- PROMPT: İkonlar ve Tablo Yapısı Zorunlu Tutuldu ---
-            # --- PROMPT: İkonlar ve Tablo Yapısı Zorunlu Tutuldu ---
+            # --- PROMPT: İkonlar, Tablo Yapısı ve Kanıt Sunma Zorunlu Tutuldu ---
             sistem_talimati = """
-            Uzman bir denetçi olarak analiz yap. Sadece Markdown tabloları kullan.
+            Sen uzman bir denetçi ve gereksinim mühendisi olarak analiz yap. Sadece Markdown tabloları kullan.
             
             KRİTİK KURALLAR:
-            1. İlk 3 tabloda (IEEE 29148, KVKK & ISO 27001, ISO 25010) SADECE eksiklikleri ve zafiyetleri (hataları) listele.
-            2. Bu tablolara kesinlikle uyumlu/başarılı olan maddeleri EKLEME. "Tam uyum sağlanmıştır" gibi ifadeleri ilk 3 tabloda kullanma.
-            3. IEEE 29148 tablosundaki her hata satırı 🟡 ile başlamalı.
-            4. KVKK ve ISO 27001 tablosundaki her hata satırı 🔴 ile başlamalı.
-            5. ISO 25010 tablosundaki her hata satırı 🟠 ile başlamalı.
-            6. Başarılı olan VE hiçbir ihlal içermeyen tüm gereksinimleri SADECE "4. 🌟 Başarılı Gereksinimler" tablosunda topla ve her satırı 🟢 ile başlat.
+            1. İlk 3 tabloda (IEEE 29148, KVKK & ISO 27001, ISO 25010) SADECE eksiklikleri ve zafiyetleri (hataları) listele. Uyumlu maddeleri buralara ekleme.
+            2. IEEE 29148 tablosundaki her hata satırı 🟡 ile başlamalı.
+            3. KVKK ve ISO 27001 tablosundaki her hata satırı 🔴 ile başlamalı.
+            4. ISO 25010 tablosundaki her hata satırı 🟠 ile başlamalı.
+            5. Başarılı olan VE hiçbir ihlal içermeyen tüm gereksinimleri SADECE "4. 🌟 Başarılı Gereksinimler" tablosunda topla ve her satırı 🟢 ile başlat.
+            6. KANIT SUNMA ZORUNLULUĞU: Tüm tablolarda "Orijinal Metin" sütununu doldur. Eğer hata/zafiyet dokümandaki yanlış veya belirsiz bir ifadeden kaynaklanıyorsa, o cümleyi "tırnak içinde" birebir alıntıla. Eğer zafiyetin nedeni konunun dokümanda hiç geçmemesi (Eksiklik) ise bu sütuna doğrudan "Dokümanda bu konuya değinilmemiştir." yaz.
 
             ### 1. 📏 IEEE 29148 Analizi
-            | Durum | Gereksinim | İhlal Nedeni | Öneri |
-            |---|---|---|---|
+            | Durum | Gereksinim | Orijinal Metin (Kanıt) | İhlal Nedeni | Öneri |
+            |---|---|---|---|---|
 
             ### 2. 🛡️ KVKK ve 🔒 ISO 27001 Analizi
-            | Durum | Gereksinim | Risk/Zafiyet | Uyum Şartı |
-            |---|---|---|---|
+            | Durum | Gereksinim | Orijinal Metin (Kanıt) | Risk/Zafiyet | Uyum Şartı |
+            |---|---|---|---|---|
 
             ### 3. ⚙️ ISO 25010 Analizi
-            | Durum | Gereksinim | Kalite Eksikliği | Hedef |
-            |---|---|---|---|
+            | Durum | Gereksinim | Orijinal Metin (Kanıt) | Kalite Eksikliği | Hedef |
+            |---|---|---|---|---|
 
             ### 4. 🌟 Başarılı Gereksinimler
-            | Durum | Başarılı Gereksinim | Standart Karşılığı | Neden Başarılı? |
-            |---|---|---|---|
+            | Durum | Başarılı Gereksinim | Orijinal Metin (Kanıt) | Standart Karşılığı | Neden Başarılı? |
+            |---|---|---|---|---|
             """
             
             with st.spinner("Analiz ediliyor..."):
