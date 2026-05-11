@@ -59,7 +59,7 @@ if st.button("🚀 Analizi Başlat"):
             3. KVKK ve ISO 27001 tablosundaki her hata satırı 🔴 ile başlamalı.
             4. ISO 25010 tablosundaki her hata satırı 🟠 ile başlamalı.
             5. Başarılı olan VE hiçbir ihlal içermeyen tüm gereksinimleri SADECE "4. 🌟 Başarılı Gereksinimler" tablosunda topla ve her satırı 🟢 ile başlat.
-            6. KANIT SUNMA ZORUNLULUĞU: Tüm tablolarda "Orijinal Metin" sütununu doldur. Eğer hata/zafiyet dokümandaki yanlış veya belirsiz bir ifadeden kaynaklanıyorsa, o cümleyi "tırnak içinde" birebir alıntıla. Eğer zafiyetin nedeni konunun dokümanda hiç geçmemesi (Eksiklik) ise bu sütuna doğrudan "Dokümanda bu konuya değinilmemiştir." yaz.
+            6. KANIT SUNMA ZORUNLULUĞU: Tüm tablolarda "Orijinal Metin" sütununu doldur. Tablolara SADECE dokümanda var olan ancak hatalı, eksik tanımlanmış veya belirsiz olan ifadeleri ekle ve bu hatalı cümleyi "tırnak içinde" birebir alıntıla. Dokümanda HİÇ GEÇMEYEN (tamamen unutulmuş) konuları tablolara KESİNLİKLE EKLEME.
             7.Halisülasyon uydurma, sadece dökümandaki metin ile sana verilen standart ve mevzuat ile eşleştirme yap. 
             8. Dokümanda tamamen unutulmuş, hiç değinilmemiş ama projenin doğası gereği standartlar açısından mutlaka olması gereken kritik gereksinimleri, tablolardan sonra "⚠️ Gözden Kaçan Kritik Gereksinimler" başlığı altında bir paragraf veya madde imleri ile özetle.
             9. Başarılı Gereksinimler tablosunda en iyi uyum sağlayan en fazla 5 örnek ver. 
