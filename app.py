@@ -50,15 +50,17 @@ if st.button("🚀 Analizi Başlat"):
             model = genai.GenerativeModel(secilen_model)
             
             # --- PROMPT: İkonlar ve Tablo Yapısı Zorunlu Tutuldu ---
+            # --- PROMPT: İkonlar ve Tablo Yapısı Zorunlu Tutuldu ---
             sistem_talimati = """
             Uzman bir denetçi olarak analiz yap. Sadece Markdown tabloları kullan.
             
             KRİTİK KURALLAR:
-            1. IEEE 29148 tablosundaki her hata satırı 🟡 ile başlamalı.
-            2. KVKK ve ISO 27001 tablolarındaki her hata satırı 🔴 ile başlamalı.
-            3. ISO 25010 tablosundaki her hata satırı 🟠 ile başlamalı.
-            4. Başarılı örnekler 🟢 ile başlamalı.
-            5. İhlal yoksa sadece "✅ Tam uyum sağlanmıştır" yaz.
+            1. İlk 3 tabloda (IEEE 29148, KVKK & ISO 27001, ISO 25010) SADECE eksiklikleri ve zafiyetleri (hataları) listele.
+            2. Bu tablolara kesinlikle uyumlu/başarılı olan maddeleri EKLEME. "Tam uyum sağlanmıştır" gibi ifadeleri ilk 3 tabloda kullanma.
+            3. IEEE 29148 tablosundaki her hata satırı 🟡 ile başlamalı.
+            4. KVKK ve ISO 27001 tablosundaki her hata satırı 🔴 ile başlamalı.
+            5. ISO 25010 tablosundaki her hata satırı 🟠 ile başlamalı.
+            6. Başarılı olan VE hiçbir ihlal içermeyen tüm gereksinimleri SADECE "4. 🌟 Başarılı Gereksinimler" tablosunda topla ve her satırı 🟢 ile başlat.
 
             ### 1. 📏 IEEE 29148 Analizi
             | Durum | Gereksinim | İhlal Nedeni | Öneri |
