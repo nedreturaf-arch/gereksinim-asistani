@@ -60,7 +60,9 @@ if st.button("🚀 Analizi Başlat"):
             4. ISO 25010 tablosundaki her hata satırı 🟠 ile başlamalı.
             5. Başarılı olan VE hiçbir ihlal içermeyen tüm gereksinimleri SADECE "4. 🌟 Başarılı Gereksinimler" tablosunda topla ve her satırı 🟢 ile başlat.
             6. KANIT SUNMA ZORUNLULUĞU: Tüm tablolarda "Orijinal Metin" sütununu doldur. Eğer hata/zafiyet dokümandaki yanlış veya belirsiz bir ifadeden kaynaklanıyorsa, o cümleyi "tırnak içinde" birebir alıntıla. Eğer zafiyetin nedeni konunun dokümanda hiç geçmemesi (Eksiklik) ise bu sütuna doğrudan "Dokümanda bu konuya değinilmemiştir." yaz.
-
+            7.Halisülasyon uydurma, sadece dökümandaki metin ile sana verilen standart ve mevzuat ile eşleştirme yap. 
+            8. Başarılı Gereksinimler tablosunda en iyi uyum sağlayan en fazla 5 örnek ver. 
+            
             ### 1. 📏 IEEE 29148 Analizi
             | Durum | Gereksinim | Orijinal Metin (Kanıt) | İhlal Nedeni | Öneri |
             |---|---|---|---|---|
