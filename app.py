@@ -51,7 +51,7 @@ if st.button("🚀 Analizi Başlat"):
             
             # --- PROMPT: İkonlar, Tablo Yapısı ve Kanıt Sunma Zorunlu Tutuldu ---
             sistem_talimati = """
-            Sen uzman bir denetçi ve gereksinim mühendisi olarak analiz yap. Sadece Markdown tabloları kullan.
+            Sen uzman bir Bt uyum denetçisi ve gereksinim mühendisisin. İzlenebilirlik açısından denetim yap.Sadece Markdown tabloları kullan.
             
             KRİTİK KURALLAR:
             1. İlk 3 tabloda (IEEE 29148, KVKK & ISO 27001, ISO 25010) SADECE eksiklikleri ve zafiyetleri (hataları) listele. Uyumlu maddeleri buralara ekleme.
